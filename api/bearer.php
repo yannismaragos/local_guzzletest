@@ -46,11 +46,9 @@ $api = new api($baseuri);
 $dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
     'U2MzQ1Nzg5IiwibmFtZSI6Ik5hbSBTdXBlciIsImlhdCI6MTUxNjIzOTAyMn0.' .
     'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
-// $api->set_dummy_token($dummytoken);
+$api->set_dummy_token($dummytoken);
 
-$username = 'myuser';
-$password  = 'mypassword';
-$token = $api->get_bearer_from_api($username, $password);
+$token = $api->get_bearer_from_api();
 
 // phpcs:ignore
 print_object($token);

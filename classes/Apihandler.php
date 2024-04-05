@@ -66,6 +66,31 @@ class Apihandler {
     private $dummytoken;
 
     /**
+     * The username for authentication.
+     *
+     * Storing the username and password directly in the code is not safe and
+     * is considered a security risk. It is recommended to use secure methods
+     * such as environment variables or configuration files to store sensitive
+     * information like usernames and passwords.
+     *
+     * @var string
+     */
+    private static $username = 'myuser';
+
+    /**
+     * The password for authentication.
+     *
+     * Storing the username and password directly in the code is not safe and
+     * is considered a security risk. It is recommended to use secure methods
+     * such as environment variables or configuration files to store sensitive
+     * information like usernames and passwords.
+     *
+     * @var string
+     */
+    private static $password = 'mypassword';
+
+
+    /**
      * Class constructor.
      */
     public function __construct(string $baseuri) {
@@ -118,14 +143,9 @@ class Apihandler {
      * @throws Exception If the API request was not successful or the token is not found.
      * @throws RequestException If there was an error in the API request.
      */
-    public function get_bearer_from_api(string $username, string $password) {
+    public function get_bearer_from_api() {
         if ($this->dummytoken) {
             return $this->dummytoken;
-        }
-
-        // Validate input parameters.
-        if (empty($username) || empty($password)) {
-            throw new InvalidArgumentException('Invalid username or password.');
         }
 
         $method = 'POST';
@@ -151,8 +171,8 @@ class Apihandler {
 
         // Define the JSON payload.
         $body = json_encode([
-            "username" => $username,
-            "password" => $password,
+            "username" => self::$username,
+            "password" => self::$password,
             "type" => "1",
         ]);
 
@@ -269,11 +289,11 @@ class Apihandler {
      * @return array|false An array of objects if successful, or false if
      *                     the bearer token is not found.
      */
-    public function get_paginated_data(string $username, string $password, int $pagelimit = 10) {
+    public function get_paginated_data(int $pagelimit = 10) {
         if ($this->dummytoken) {
             $token = $this->dummytoken;
         } else {
-            $token = $this->get_bearer_from_api($username, $password);
+            $token = $this->get_bearer_from_api();
         }
 
         if (!$token) {

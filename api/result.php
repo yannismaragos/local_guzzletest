@@ -49,9 +49,7 @@ $dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
     'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
 $api->set_dummy_token($dummytoken);
 
-$username = 'myuser';
-$password  = 'mypassword';
-$token = $api->get_bearer_from_api($username, $password);
+$token = $api->get_bearer_from_api();
 
 // phpcs:ignore
 print_object($token);
@@ -63,48 +61,10 @@ echo '======================================================== </br>';
 if (empty($token)) {
     echo 'Bearer token not found </br>';
 } else {
-    die;
+    $country = isset($_GET['country']) ? $_GET['country'] : '';
+    $uri = $baseuri . "/search?country=$country";
 
-    $am = isset($_GET['am']) ? $_GET['am'] : '';
-    $method = 'GET';
-    $uri = "https://aen.gov.gr/api/ws/students/list?am=$am";
-    $headers = [
-        'accept-language' => 'en',
-        'authorization' => "Bearer $token",
-        'connection' => 'keep-alive',
-        'dnt' => '1',
-        'sec-fetch-dest' => 'empty',
-        'sec-fetch-mode' => 'cors',
-        'sec-fetch-site' => 'same-origin',
-        'sec-gpc' => '1',
-        'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-        'accept' => '*/*',
-        'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
-        'sec-ch-ua-mobile' => '?0',
-        'sec-ch-ua-platform' => 'Linux',
-    ];
-
-    // Use the provided client or create a new client.
-    $client = new Client();
-    $response = $client->request($method, $uri, [
-        'headers' => $headers,
-    ]);
-    $statuscode = $response->getStatusCode();
-
-    // Check if the API request was successful.
-    if ($statuscode === 200) {
-        $responsedata = json_decode($response->getBody(), true);
-
-        // Check if JSON decoding was successful and there were no errors.
-        if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
-            echo '<pre>';
-            // phpcs:ignore
-            print_object($responsedata);
-            echo '</pre>';
-        }
-    } else {
-        echo "Statuscode: $statuscode </br>";
-    }
+    $result = $api->get_paginated_data();
 }
 
 echo $OUTPUT->footer();
