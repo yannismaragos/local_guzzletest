@@ -114,6 +114,8 @@ class Apihandler {
      *
      * @return string|false The bearer token if authentication is successful,
      *                      or false on failure.
+     * @throws Exception If the API request was not successful or the token is not found.
+     * @throws RequestException If there was an error in the API request.
      */
     public function get_bearer_from_api(string $username, string $password) {
         if ($this->dummytoken) {
@@ -169,16 +171,9 @@ class Apihandler {
                 }
             }
 
-            // If the API request was not successful or token is not found, handle error.
-            throw new Exception(get_string('error:beartoken', 'local_guzzletest'));
-        } catch (RequestException $e) {
-            $errorresponse = [
-                'error' => $e->getCode(),
-                'message' => $e->getMessage(),
-            ];
-
-            return $errorresponse;
-        } catch (Exception $e) {
+            // The API request was not successful or token is not found.
+            throw new Exception('Failed to obtain bearer token from API.', $statuscode);
+        } catch (RequestException | Exception $e) {
             $errorresponse = [
                 'error' => $e->getCode(),
                 'message' => $e->getMessage(),

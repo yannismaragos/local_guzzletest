@@ -30,4 +30,3 @@ $string['pluginname'] = 'GuzzleTest';
 $string['totalfetchedpages'] = 'Fetched {$a->fetched} of {$a->total} total pages';
 $string['totalresults'] = 'Total results: {$a}';
 $string['privacy:metadata'] = 'The GuzzleTest plugin does not store any personal data.';
-$string['error:beartoken'] = 'Failed to obtain bearer token from API.';
