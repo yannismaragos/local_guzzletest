@@ -30,6 +30,7 @@ namespace local_guzzletest;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use InvalidArgumentException;
 use Exception;
 
 /**
@@ -122,6 +123,11 @@ class Apihandler {
             return $this->dummytoken;
         }
 
+        // Validate input parameters.
+        if (empty($username) || empty($password)) {
+            throw new InvalidArgumentException('Invalid username or password.');
+        }
+
         $method = 'POST';
         $uri = $this->baseuri . '/api/ldap/login';
         $headers = [
@@ -157,6 +163,7 @@ class Apihandler {
             $response = $client->request($method, $uri, [
                 'headers' => $headers,
                 'body' => $body,
+                'timeout' => 20,
             ]);
             $statuscode = $response->getStatusCode();
             $responsedata = json_decode($response->getBody(), true);
@@ -173,7 +180,7 @@ class Apihandler {
 
             // The API request was not successful or token is not found.
             throw new Exception('Failed to obtain bearer token from API.', $statuscode);
-        } catch (RequestException | Exception $e) {
+        } catch (RequestException | InvalidArgumentException | Exception $e) {
             $errorresponse = [
                 'error' => $e->getCode(),
                 'message' => $e->getMessage(),
@@ -200,6 +207,11 @@ class Apihandler {
      *               status code and error message are returned within an array.
      */
     public function get_data_from_api(string $uri, string $token): array {
+        // Validate input parameters.
+        if (empty($uri) || empty($token)) {
+            throw new InvalidArgumentException('Invalid URI or token.');
+        }
+
         $method = 'GET';
         $headers = [
             'accept-language' => 'en',
@@ -223,24 +235,20 @@ class Apihandler {
         try {
             $response = $client->request($method, $uri, [
                 'headers' => $headers,
+                'timeout' => 20,
             ]);
 
             $responsedata = json_decode($response->getBody(), true);
 
             // Check if JSON decoding was successful and there were no errors.
-            if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
+            if ($responsedata !== null && json_last_error() === JSON_ERROR_NONE) {
                 $responsedata['status_code'] = $response->getStatusCode();
                 return $responsedata;
             }
 
             // If null or JSON decoding fails.
-            $errorresponse = [
-                'error' => $response->getStatusCode(),
-                'message' => ($responsedata === null) ? 'Received null response.' : 'Error decoding JSON data.',
-            ];
-
-            return $errorresponse;
-        } catch (RequestException $e) {
+            throw new Exception('Error decoding JSON data: ' . json_last_error_msg(), $response->getStatusCode());
+        } catch (RequestException | InvalidArgumentException | Exception $e) {
             // Handle exceptions and return error message.
             $errorresponse = [
                 'error' => $e->getCode(),
@@ -309,7 +317,7 @@ class Apihandler {
         $this->log_message(get_string('totalresults', 'local_guzzletest', count($results)));
 
         if (!empty($results)) {
-            $users = $this->create_objects($results);
+            $results = $this->create_objects($results);
         }
 
         return $results;
