@@ -27,11 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'GuzzleTest';
-$string['totalusers'] = 'Users fetched from API: {$a}';
-$string['userswithoutam'] = 'Users without AM: {$a}';
-$string['userswithoutemail'] = 'Users without email: {$a}';
-$string['userswithinvalidemail'] = 'Users with invalid email: {$a}';
 $string['totalfetchedpages'] = 'Fetched {$a->fetched} of {$a->total} total pages';
-$string['emailexists'] = 'A user with the email address {$a} is already in the system';
-$string['emailuser'] = 'Sent email to {$a}';
+$string['totalresults'] = 'Total results: {$a}';
 $string['privacy:metadata'] = 'The GuzzleTest plugin does not store any personal data.';
+$string['error:beartoken'] = 'Failed to obtain bearer token from API.';

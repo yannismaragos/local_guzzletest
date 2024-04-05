@@ -1,83 +1,70 @@
 <?php
-// phpcs:disable
-require_once('../../../../config.php');
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Test API result.
+ *
+ * @package    local_guzzletest
+ * @copyright  2024 Yannis Maragos <maragos.y@wideservices.gr>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+// phpcs:ignore
+require_once('../../../config.php');
+
+use local_guzzletest\Apihandler as api;
 use GuzzleHttp\Client;
 
-$context = context_system::instance();
+$context = \core\context\system::instance();
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/guzzletest/api/user.php'));
+$PAGE->set_url(new moodle_url('/local/guzzletest/api/result.php'));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('pluginname', 'local_guzzletest'));
 $PAGE->set_heading(get_string('pluginname', 'local_guzzletest'));
 
 echo $OUTPUT->header();
 
-echo 'test-api-user </br>';
+echo 'test-api-result </br>';
 echo '======================================================== </br>';
 echo 'get_bearer_from_api </br>';
 echo '======================================================== </br>';
 
-$method = 'POST';
-$uri = 'https://aen.gov.gr/api/ldap/login';
-$headers = [
-    'accept' => 'application/json, text/plain, */*',
-    'accept-language' => 'en;q=0.9',
-    'connection' => 'keep-alive',
-    'content-type' => 'application/json',
-    'dnt' => '1',
-    'origin' => 'https://aen.gov.gr',
-    'referer' => 'https://aen.gov.gr/login/',
-    'sec-fetch-dest' => 'empty',
-    'sec-fetch-mode' => 'cors',
-    'sec-fetch-site' => 'same-origin',
-    'sec-gpc' => '1',
-    'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-    'x-access-level' => '74',
-    'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
-    'sec-ch-ua-mobile' => '?0',
-    'sec-ch-ua-platform' => 'Linux'
-];
+$baseuri = 'http://universities.hipolabs.com';
+$api = new api($baseuri);
+$dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
+    'U2MzQ1Nzg5IiwibmFtZSI6Ik5hbSBTdXBlciIsImlhdCI6MTUxNjIzOTAyMn0.' .
+    'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
+$api->set_dummy_token($dummytoken);
 
-// Define the JSON payload.
-$body = json_encode([
-    "username" => 'wsuseraen',
-    "password" => 'ws_user_aen',
-    "type" => "1",
-]);
+$username = 'myuser';
+$password  = 'mypassword';
+$token = $api->get_bearer_from_api($username, $password);
 
-$client = new Client();
-$response = $client->request($method, $uri, [
-    'headers' => $headers,
-    'body' => $body,
-]);
-$statuscode = $response->getStatusCode();
-$token = '';
-
-// Check if the API request was successful.
-if ($statuscode === 200) {
-    $responsedata = json_decode($response->getBody(), true);
-
-    // Check if JSON decoding was successful and there were no errors.
-    if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
-        if (!empty($responsedata['token'])) {
-            $token = $responsedata['token'];
-            echo '<pre>';
-            print_r($token);
-            echo '</pre>';
-        }
-    }
-} else {
-    echo "Statuscode: $statuscode </br>";
-}
+// phpcs:ignore
+print_object($token);
 
 echo '======================================================== </br>';
-echo 'request_users </br>';
+echo 'request_result </br>';
 echo '======================================================== </br>';
 
 if (empty($token)) {
     echo 'Bearer token not found </br>';
 } else {
+    die;
+
     $am = isset($_GET['am']) ? $_GET['am'] : '';
     $method = 'GET';
     $uri = "https://aen.gov.gr/api/ws/students/list?am=$am";
@@ -111,7 +98,8 @@ if (empty($token)) {
         // Check if JSON decoding was successful and there were no errors.
         if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
             echo '<pre>';
-            print_r($responsedata);
+            // phpcs:ignore
+            print_object($responsedata);
             echo '</pre>';
         }
     } else {
