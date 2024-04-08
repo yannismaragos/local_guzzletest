@@ -74,26 +74,16 @@ class Apihandler {
     /**
      * The username for authentication.
      *
-     * Storing the username and password directly in the code is not safe and
-     * is considered a security risk. It is recommended to use secure methods
-     * such as environment variables or configuration files to store sensitive
-     * information like usernames and passwords.
-     *
      * @var string
      */
-    private static $username = 'myusername';
+    private $username;
 
     /**
      * The password for authentication.
      *
-     * Storing the username and password directly in the code is not safe and
-     * is considered a security risk. It is recommended to use secure methods
-     * such as environment variables or configuration files to store sensitive
-     * information like usernames and passwords.
-     *
      * @var string
      */
-    private static $password = 'mypassword';
+    private $password;
 
     /**
      * The headers for the API token.
@@ -117,10 +107,16 @@ class Apihandler {
     private $schema;
 
     /**
-     * Class constructor.
+     * Constructs a new instance of the Apihandler class.
+     *
+     * @param string $baseuri The base URI for the API.
+     * @param string $username (optional) The username for authentication.
+     * @param string $password (optional) The password for authentication.
      */
-    public function __construct(string $baseuri) {
+    public function __construct(string $baseuri, string $username = null, string $password = null) {
         $this->baseuri = rtrim($baseuri, '/');
+        $this->username = $username;
+        $this->password = $password;
         $this->tokenheaders = $this->get_default_token_headers();
         $this->requestheaders = $this->get_default_request_headers();
         $this->schema = $this->get_default_response_schema();
@@ -231,8 +227,8 @@ class Apihandler {
 
         // Define the JSON payload.
         $body = json_encode([
-            "username" => self::$username,
-            "password" => self::$password,
+            "username" => $this->username,
+            "password" => $this->password,
             "type" => "1",
         ]);
 
@@ -262,7 +258,7 @@ class Apihandler {
             // The API request was not successful or token is not found.
             throw new Exception('Failed to obtain bearer token from API.', self::EXCEPTION_BEARER_TOKEN);
         } catch (RequestException | Exception $e) {
-            throw new Exception($e->getMessage(), $e->getCode(), $e);
+            throw $e;
         }
     }
 
@@ -276,25 +272,23 @@ class Apihandler {
      * response data to extract information.
      *
      * @param string $uri The URI to send the API request to.
-     * @param string $token The bearer token used for authentication.
-     *
      * @return array An array containing the data retrieved from the API
-     *               if successful. If an error occurs during the request, the
-     *               status code and error message are returned within an array.
+     *               if successful.
+     * @throws RequestException If there was an error in the API request.
+     * @throws InvalidArgumentException If there is an invalid argument.
+     * @throws Exception If null or JSON decoding fails.
      */
-    private function get_data_from_uri(string $uri, string $token): array {
+    private function get_data_from_uri(string $uri): array {
         // Validate input parameters.
-        if (empty($uri) || empty($token)) {
-            throw new InvalidArgumentException('Invalid URI or token.', self::EXCEPTION_INVALID_PARAMETER);
+        if (empty($uri)) {
+            throw new InvalidArgumentException('Invalid URI.', self::EXCEPTION_INVALID_PARAMETER);
         }
-
-        $method = 'GET';
 
         // Use the provided client or create a new client.
         $client = $this->httpclient ?? new Client();
 
         try {
-            $response = $client->request($method, $uri, [
+            $response = $client->request('GET', $uri, [
                 'headers' => $this->requestheaders,
                 'timeout' => 20,
             ]);
@@ -310,13 +304,7 @@ class Apihandler {
             // If null or JSON decoding fails.
             throw new Exception('Error decoding JSON data: ' . json_last_error_msg(), self::EXCEPTION_JSON_DECODING_ERROR);
         } catch (RequestException | InvalidArgumentException | Exception $e) {
-            // Handle exceptions and return error message.
-            $errorresponse = [
-                'error' => $e->getCode(),
-                'message' => $e->getMessage(),
-            ];
-
-            return $errorresponse;
+            throw $e;
         }
     }
 
@@ -337,7 +325,7 @@ class Apihandler {
 
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $uri = $baseuri . '?' . http_build_query($params, '', '&');
-        $response = $this->get_data_from_uri($uri, $token);
+        $response = $this->get_data_from_uri($uri);
 
         if (!empty($response['error']) && !empty($response['message'])) {
             throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
@@ -377,7 +365,7 @@ class Apihandler {
         do {
             $params[$this->schema['page_number']] = $page;
             $uri = $baseuri . '?' . http_build_query($params, '', '&');
-            $response = $this->get_data_from_uri($uri, $token);
+            $response = $this->get_data_from_uri($uri);
 
             if (!empty($response['error']) && !empty($response['message'])) {
                 throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
