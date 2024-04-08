@@ -59,13 +59,6 @@ class Apihandler {
     private $httpclient;
 
     /**
-     * Dummy bearer token.
-     *
-     * @var string
-     */
-    private $dummytoken;
-
-    /**
      * The username for authentication.
      *
      * Storing the username and password directly in the code is not safe and
@@ -109,17 +102,6 @@ class Apihandler {
     }
 
     /**
-     * Set a dummy bearer token.
-     *
-     * @param string $token The dummy bearer token.
-     *
-     * @return void
-     */
-    public function set_dummy_token(string $token): void {
-        $this->dummytoken = $token;
-    }
-
-    /**
      * Logs a message with mtrace.
      *
      * @param string $message The message to be logged.
@@ -138,18 +120,15 @@ class Apihandler {
      * authentication credentials in the request body and expects a successful
      * response with a token field.
      *
+     * @param string $endpoint The endpoint to be appended to the base URI.
      * @return string|false The bearer token if authentication is successful,
      *                      or false on failure.
      * @throws Exception If the API request was not successful or the token is not found.
      * @throws RequestException If there was an error in the API request.
      */
-    public function get_bearer_token() {
-        if ($this->dummytoken) {
-            return $this->dummytoken;
-        }
-
+    public function get_bearer_token(string $endpoint = '') {
         $method = 'POST';
-        $uri = $this->baseuri . '/api/ldap/login';
+        $uri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $headers = [
             'accept' => 'application/json, text/plain, */*',
             'accept-language' => 'en;q=0.9',
@@ -302,13 +281,7 @@ class Apihandler {
      * @throws Exception If there is an error in the API response.
      */
     public function get_page(array $params = [], string $endpoint = '') {
-        if ($this->dummytoken) {
-            $token = $this->dummytoken;
-        } else {
-            $token = $this->get_bearer_token();
-        }
-
-        if (!$token) {
+        if (!$token = $this->get_bearer_token()) {
             return false;
         }
 
@@ -346,13 +319,7 @@ class Apihandler {
      * @throws Exception If an error occurs during the API request.
      */
     public function get_all_pages(array $params = [], string $endpoint = '') {
-        if ($this->dummytoken) {
-            $token = $this->dummytoken;
-        } else {
-            $token = $this->get_bearer_token();
-        }
-
-        if (!$token) {
+        if (!$token = $this->get_bearer_token()) {
             return false;
         }
 

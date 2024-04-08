@@ -25,7 +25,7 @@
 // phpcs:ignore
 require_once('../../config.php');
 
-use local_guzzletest\Apihandler as api;
+use local_guzzletest\Apihandler;
 
 $context = \core\context\system::instance();
 $PAGE->set_context($context);
@@ -36,19 +36,14 @@ $PAGE->set_heading(get_string('pluginname', 'local_guzzletest'));
 
 echo $OUTPUT->header();
 
-echo 'test-bearer </br>';
+echo 'test-token </br>';
 echo '======================================================== </br>';
-echo 'get_bearer_from_api </br>';
+echo 'get_bearer_token </br>';
 echo '======================================================== </br>';
 
-$baseuri = new moodle_url('/local/guzzletest/api/bearer.php');
-$api = new api($baseuri);
-$dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
-    'U2MzQ1Nzg5IiwibmFtZSI6Ik5hbSBTdXBlciIsImlhdCI6MTUxNjIzOTAyMn0.' .
-    'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
-$api->set_dummy_token($dummytoken);
-
-$token = $api->get_bearer_from_api();
+$baseuri = new moodle_url('/local/guzzletest/api');
+$apihandler = new Apihandler($baseuri);
+$token = $apihandler->get_bearer_token('token.php');
 
 // phpcs:ignore
 print_object($token);
