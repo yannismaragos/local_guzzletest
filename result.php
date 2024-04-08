@@ -57,7 +57,7 @@ $params = [
     'limit' => optional_param('limit', 100, PARAM_INT),
 ];
 
-$result = $apihandler->get_page($params, 'json.php');
+$result = $apihandler->get_page('json.php', $params);
 
 // phpcs:ignore
 print_object($result);
