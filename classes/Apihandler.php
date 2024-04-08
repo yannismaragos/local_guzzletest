@@ -45,6 +45,13 @@ use Exception;
  */
 class Apihandler {
     /**
+     * The exception code for bearer token errors.
+     *
+     * 4000 series for API-related exceptions
+     */
+    const EXCEPTION_BEARER_TOKEN = 4001;
+
+    /**
      * The base URI.
      *
      * @var string
@@ -172,20 +179,16 @@ class Apihandler {
                 // Check if JSON decoding was successful and there were no errors.
                 if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
                     if (!empty($responsedata['token'])) {
-                        return $responsedata['token'];
+                        $token = $responsedata['token'];
+                        return $token;
                     }
                 }
             }
 
             // The API request was not successful or token is not found.
-            throw new Exception('Failed to obtain bearer token from API.', $statuscode);
+            throw new Exception('Failed to obtain bearer token from API.', self::EXCEPTION_BEARER_TOKEN);
         } catch (RequestException | Exception $e) {
-            $errorresponse = [
-                'error' => $e->getCode(),
-                'message' => $e->getMessage(),
-            ];
-
-            return $errorresponse;
+            throw new Exception($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -284,6 +287,7 @@ class Apihandler {
         if (!$token = $this->get_bearer_token()) {
             return false;
         }
+        die(var_dump($token));
 
         // We expect a specific format for the response.
         $schema = $this->get_response_schema();
