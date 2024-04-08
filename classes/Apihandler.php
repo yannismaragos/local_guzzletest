@@ -45,11 +45,17 @@ use Exception;
  */
 class Apihandler {
     /**
-     * The exception code for bearer token errors.
+     * Exception codes.
      *
+     * 1000 series for database-related exceptions
+     * 2000 series for file I/O exceptions
+     * 3000 series for network-related exceptions
      * 4000 series for API-related exceptions
      */
     const EXCEPTION_BEARER_TOKEN = 4001;
+    const EXCEPTION_INVALID_PARAMETER = 4002;
+    const EXCEPTION_JSON_DECODING_ERROR = 4003;
+    const EXCEPTION_API_RESPONSE_ERROR = 4004;
 
     /**
      * The base URI.
@@ -75,7 +81,7 @@ class Apihandler {
      *
      * @var string
      */
-    private static $username = 'myuser';
+    private static $username = 'myusername';
 
     /**
      * The password for authentication.
@@ -211,7 +217,7 @@ class Apihandler {
     private function get_data_from_api(string $uri, string $token): array {
         // Validate input parameters.
         if (empty($uri) || empty($token)) {
-            throw new InvalidArgumentException('Invalid URI or token.');
+            throw new InvalidArgumentException('Invalid URI or token.', self::EXCEPTION_INVALID_PARAMETER);
         }
 
         $method = 'GET';
@@ -249,7 +255,7 @@ class Apihandler {
             }
 
             // If null or JSON decoding fails.
-            throw new Exception('Error decoding JSON data: ' . json_last_error_msg(), $response->getStatusCode());
+            throw new Exception('Error decoding JSON data: ' . json_last_error_msg(), self::EXCEPTION_JSON_DECODING_ERROR);
         } catch (RequestException | InvalidArgumentException | Exception $e) {
             // Handle exceptions and return error message.
             $errorresponse = [
@@ -297,13 +303,11 @@ class Apihandler {
         $response = $this->get_data_from_api($uri, $token);
 
         if (!empty($response['error']) && !empty($response['message'])) {
-            throw new Exception('Error ' . $response['error'] . ': ' . $response['message']);
+            throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
         }
 
         if (!empty($response[$schema['records']])) {
-            $results = $response[$schema['records']];
-
-            return $this->process_results($results);
+            return $response[$schema['records']];
         }
 
         return [];
@@ -340,7 +344,7 @@ class Apihandler {
             $response = $this->get_data_from_api($uri, $token);
 
             if (!empty($response['error']) && !empty($response['message'])) {
-                throw new Exception('Error ' . $response['error'] . ': ' . $response['message']);
+                throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
                 break;
             }
 
