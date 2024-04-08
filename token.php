@@ -42,7 +42,9 @@ echo 'get_bearer_token </br>';
 echo '======================================================== </br>';
 
 $baseuri = new moodle_url('/local/guzzletest/api');
-$apihandler = new Apihandler($baseuri);
+$username = 'myusername';
+$password = 'mypassword';
+$apihandler = new Apihandler($baseuri, $username, $password);
 $token = $apihandler->get_bearer_token('token.php');
 
 // phpcs:ignore

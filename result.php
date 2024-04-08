@@ -38,19 +38,13 @@ echo $OUTPUT->header();
 
 echo 'test-result </br>';
 echo '======================================================== </br>';
-echo 'get_bearer_token </br>';
+echo 'request_result </br>';
 echo '======================================================== </br>';
 
 $baseuri = new moodle_url('/local/guzzletest/api');
-$apihandler = new Apihandler($baseuri);
-$token = $apihandler->get_bearer_token('token.php');
-
-// phpcs:ignore
-print_object($token);
-
-echo '======================================================== </br>';
-echo 'request_result </br>';
-echo '======================================================== </br>';
+$username = 'myusername';
+$password = 'mypassword';
+$apihandler = new Apihandler($baseuri, $username, $password);
 
 $params = [
     'page' => optional_param('page', 1, PARAM_INT),
