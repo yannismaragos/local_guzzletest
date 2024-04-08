@@ -25,6 +25,21 @@
 // phpcs:ignore moodle.Files.RequireLogin.Missing
 require_once('../../../config.php');
 
+$error = false;
+
+// Simulate response error.
+if ($error) {
+    header('HTTP/1.1 500 Internal Server Error');
+    header('Content-Type: application/json');
+    echo json_encode([
+        'error' => [
+            'code' => 500,
+            'message' => 'Internal Server Error: Something went wrong.',
+        ],
+    ]);
+    exit;
+}
+
 $page = optional_param('page', 1, PARAM_INT);
 $limit = optional_param('limit', null, PARAM_INT);
 $offset = ($page - 1) * $limit;
