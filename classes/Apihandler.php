@@ -95,54 +95,34 @@ class Apihandler {
      */
     private static $password = 'mypassword';
 
+    /**
+     * The headers for the API token.
+     *
+     * @var array
+     */
+    private $tokenheaders;
+
+    /**
+     * The headers for the API request.
+     *
+     * @var array
+     */
+    private $requestheaders;
+
+    /**
+     * The response schema used by the API handler.
+     *
+     * @var string
+     */
+    private $schema;
 
     /**
      * Class constructor.
      */
     public function __construct(string $baseuri) {
         $this->baseuri = rtrim($baseuri, '/');
-    }
 
-    /**
-     * Set the HTTP client instance.
-     *
-     * @param Client $httpclient The HTTP client instance.
-     *
-     * @return void
-     */
-    public function set_http_client(Client $httpclient): void {
-        $this->httpclient = $httpclient;
-    }
-
-    /**
-     * Logs a message with mtrace.
-     *
-     * @param string $message The message to be logged.
-     *
-     * @return void
-     */
-    public function log_message(string $message): void {
-        mtrace($message);
-    }
-
-    /**
-     * Get a bearer token from an API by sending an authentication request.
-     *
-     * This function sends an HTTP POST request to the specified URI to
-     * authenticate and retrieve a bearer token. It uses the provided
-     * authentication credentials in the request body and expects a successful
-     * response with a token field.
-     *
-     * @param string $endpoint The endpoint to be appended to the base URI.
-     * @return string|false The bearer token if authentication is successful,
-     *                      or false on failure.
-     * @throws Exception If the API request was not successful or the token is not found.
-     * @throws RequestException If there was an error in the API request.
-     */
-    public function get_bearer_token(string $endpoint = '') {
-        $method = 'POST';
-        $uri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
-        $headers = [
+        $this->tokenheaders = [
             'accept' => 'application/json, text/plain, */*',
             'accept-language' => 'en;q=0.9',
             'connection' => 'keep-alive',
@@ -161,6 +141,70 @@ class Apihandler {
             'sec-ch-ua-platform' => 'Linux',
         ];
 
+        $this->requestheaders = [
+            'accept-language' => 'en',
+            'connection' => 'keep-alive',
+            'dnt' => '1',
+            'sec-fetch-dest' => 'empty',
+            'sec-fetch-mode' => 'cors',
+            'sec-fetch-site' => 'same-origin',
+            'sec-gpc' => '1',
+            'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+            'accept' => '*/*',
+            'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
+            'sec-ch-ua-mobile' => '?0',
+            'sec-ch-ua-platform' => 'Linux',
+        ];
+
+        $this->schema = [
+            'page_number' => 'page',
+            'page_limit' => 'limit',
+            'total_records' => 'total',
+            'records' => 'records',
+        ];
+    }
+
+    /**
+     * Sets the response schema for the API handler.
+     *
+     * @param array $schema The response schema to set.
+     * @return void
+     */
+    public function set_response_schema(array $schema): void {
+        $this->schema = $schema;
+    }
+
+    /**
+     * Set the HTTP client instance.
+     *
+     * @param Client $httpclient The HTTP client instance.
+     *
+     * @return void
+     */
+    public function set_http_client(Client $httpclient): void {
+        $this->httpclient = $httpclient;
+    }
+
+    /**
+     * Get a bearer token from an API by sending an authentication request.
+     *
+     * This function sends an HTTP POST request to the specified URI to
+     * authenticate and retrieve a bearer token. It uses the provided
+     * authentication credentials in the request body and expects a successful
+     * response with a token field.
+     *
+     * @param string $endpoint The endpoint to be appended to the base URI.
+     * @param array $headers (Optional) Additional headers to include in the request.
+     * @return string|false The bearer token if authentication is successful,
+     *                      or false on failure.
+     * @throws Exception If the API request was not successful or the token is not found.
+     * @throws RequestException If there was an error in the API request.
+     */
+    public function get_bearer_token(string $endpoint = '', array $headers = []) {
+        $method = 'POST';
+        $uri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
+        $this->tokenheaders = empty($headers) ? $this->tokenheaders : $headers;
+
         // Define the JSON payload.
         $body = json_encode([
             "username" => self::$username,
@@ -173,7 +217,7 @@ class Apihandler {
 
         try {
             $response = $client->request($method, $uri, [
-                'headers' => $headers,
+                'headers' => $this->tokenheaders,
                 'body' => $body,
                 'timeout' => 20,
             ]);
@@ -214,35 +258,20 @@ class Apihandler {
      *               if successful. If an error occurs during the request, the
      *               status code and error message are returned within an array.
      */
-    private function get_data_from_api(string $uri, string $token): array {
+    private function get_data_from_uri(string $uri, string $token): array {
         // Validate input parameters.
         if (empty($uri) || empty($token)) {
             throw new InvalidArgumentException('Invalid URI or token.', self::EXCEPTION_INVALID_PARAMETER);
         }
 
         $method = 'GET';
-        $headers = [
-            'accept-language' => 'en',
-            'authorization' => "Bearer $token",
-            'connection' => 'keep-alive',
-            'dnt' => '1',
-            'sec-fetch-dest' => 'empty',
-            'sec-fetch-mode' => 'cors',
-            'sec-fetch-site' => 'same-origin',
-            'sec-gpc' => '1',
-            'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-            'accept' => '*/*',
-            'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
-            'sec-ch-ua-mobile' => '?0',
-            'sec-ch-ua-platform' => 'Linux',
-        ];
 
         // Use the provided client or create a new client.
         $client = $this->httpclient ?? new Client();
 
         try {
             $response = $client->request($method, $uri, [
-                'headers' => $headers,
+                'headers' => $this->requestheaders,
                 'timeout' => 20,
             ]);
 
@@ -268,46 +297,30 @@ class Apihandler {
     }
 
     /**
-     * Retrieves the response schema for the API handler.
-     *
-     * @return array The response schema.
-     */
-    private function get_response_schema(): array {
-        return [
-            'page_number' => 'page',
-            'page_limit' => 'limit',
-            'total_records' => 'total',
-            'records' => 'records',
-        ];
-    }
-
-    /**
      * Retrieves a page of data from the API.
      *
-     * @param array $params An array of parameters to be included in the API request.
      * @param string $endpoint The endpoint to be appended to the base URI.
+     * @param array $params An array of parameters to be included in the API request.
+     * @param array $headers (Optional) Additional headers to include in the request.
      * @return array The processed results from the API response.
      * @throws Exception If there is an error in the API response.
      */
-    public function get_page(array $params = [], string $endpoint = '') {
-        if (!$token = $this->get_bearer_token('token.php')) {
-            return false;
-        }
+    public function get_page(string $endpoint = '', array $params = [], array $headers = []) {
+        // Get token and set headers.
+        $this->requestheaders = empty($headers) ? $this->requestheaders : $headers;
+        $token = $this->get_bearer_token('token.php');
+        $this->requestheaders['authorization'] = "Bearer $token";
 
-        // We expect a specific format for the response.
-        $schema = $this->get_response_schema();
-
-        $results = [];
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $uri = $baseuri . '?' . http_build_query($params, '', '&');
-        $response = $this->get_data_from_api($uri, $token);
+        $response = $this->get_data_from_uri($uri, $token);
 
         if (!empty($response['error']) && !empty($response['message'])) {
             throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
         }
 
-        if (!empty($response[$schema['records']])) {
-            return $response[$schema['records']];
+        if (!empty($response[$this->schema['records']])) {
+            return $response[$this->schema['records']];
         }
 
         return [];
@@ -320,28 +333,27 @@ class Apihandler {
      * provided parameters. It retrieves a list of results in paginated
      * form and combines the results into an array.
      *
-     * @param array $params An array of parameters to be sent with the API request.
      * @param string $endpoint The endpoint to be appended to the base URI.
+     * @param array $params An array of parameters to be sent with the API request.
+     * @param array $headers (Optional) Additional headers to include in the request.
      * @return array|false An array of results if successful, false otherwise.
      * @throws Exception If an error occurs during the API request.
      */
-    public function get_all_pages(array $params = [], string $endpoint = '') {
-        if (!$token = $this->get_bearer_token('token.php')) {
-            return false;
-        }
-
-        // We expect a specific format for the response.
-        $schema = $this->get_response_schema();
+    public function get_all_pages(string $endpoint = '', array $params = [], array $headers = []) {
+        // Get token and set headers.
+        $this->requestheaders = empty($headers) ? $this->requestheaders : $headers;
+        $token = $this->get_bearer_token('token.php');
+        $this->requestheaders['authorization'] = "Bearer $token";
 
         $results = [];
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
-        $page = !empty($params[$schema['page_number']]) ? (int) $params[$schema['page_number']] : 1;
+        $page = !empty($params[$this->schema['page_number']]) ? (int) $params[$this->schema['page_number']] : 1;
         $totalpages = null;
 
         do {
-            $params[$schema['page_number']] = $page;
+            $params[$this->schema['page_number']] = $page;
             $uri = $baseuri . '?' . http_build_query($params, '', '&');
-            $response = $this->get_data_from_api($uri, $token);
+            $response = $this->get_data_from_uri($uri, $token);
 
             if (!empty($response['error']) && !empty($response['message'])) {
                 throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
@@ -349,13 +361,13 @@ class Apihandler {
             }
 
             if (empty($totalpages)) {
-                if (!empty($response[$schema['total_records']]) && !empty($response[$schema['page_number']])) {
-                    $totalpages = 1 + floor((int) $response[$schema['total_records']] / $params[$schema['page_limit']]);
+                if (!empty($response[$this->schema['total_records']]) && !empty($response[$this->schema['page_number']])) {
+                    $totalpages = 1 + floor((int) $response[$this->schema['total_records']] / $params[$this->schema['page_limit']]);
                 }
             }
 
-            if (!empty($response[$schema['records']])) {
-                $fetchedresults = $response[$schema['records']];
+            if (!empty($response[$this->schema['records']])) {
+                $fetchedresults = $response[$this->schema['records']];
 
                 if (!empty($fetchedresults)) {
                     $results = array_merge($results, $fetchedresults);
