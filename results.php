@@ -36,18 +36,14 @@ $PAGE->set_heading(get_string('pluginname', 'local_guzzletest'));
 
 echo $OUTPUT->header();
 
-echo 'test-api-results </br>';
+echo 'test-results </br>';
 echo '======================================================== </br>';
 echo 'get_bearer_token </br>';
 echo '======================================================== </br>';
 
-$baseuri = new moodle_url('/local/guzzletest/api/json.php');
+$baseuri = new moodle_url('/local/guzzletest/api');
 $apihandler = new Apihandler($baseuri);
-$dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
-    'U2MzQ1Nzg5IiwibmFtZSI6Ik5hbSBTdXBlciIsImlhdCI6MTUxNjIzOTAyMn0.' .
-    'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
-$apihandler->set_dummy_token($dummytoken);
-$token = $apihandler->get_bearer_token();
+$token = $apihandler->get_bearer_token('token.php');
 
 // phpcs:ignore
 print_object($token);
@@ -56,18 +52,14 @@ echo '======================================================== </br>';
 echo 'request_results </br>';
 echo '======================================================== </br>';
 
-if (empty($token)) {
-    echo 'Bearer token not found </br>';
-} else {
-    $params = [
-        'page' => optional_param('page', 1, PARAM_INT),
-        'limit' => optional_param('limit', 100, PARAM_INT),
-    ];
+$params = [
+    'page' => optional_param('page', 1, PARAM_INT),
+    'limit' => optional_param('limit', 100, PARAM_INT),
+];
 
-    $result = $apihandler->get_all_pages($params, '');
+$result = $apihandler->get_all_pages($params, 'json.php');
 
-    // phpcs:ignore
-    print_object($result);
-}
+// phpcs:ignore
+print_object($result);
 
 echo $OUTPUT->footer();

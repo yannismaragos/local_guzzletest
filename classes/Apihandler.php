@@ -284,10 +284,9 @@ class Apihandler {
      * @throws Exception If there is an error in the API response.
      */
     public function get_page(array $params = [], string $endpoint = '') {
-        if (!$token = $this->get_bearer_token()) {
+        if (!$token = $this->get_bearer_token('token.php')) {
             return false;
         }
-        die(var_dump($token));
 
         // We expect a specific format for the response.
         $schema = $this->get_response_schema();
@@ -323,7 +322,7 @@ class Apihandler {
      * @throws Exception If an error occurs during the API request.
      */
     public function get_all_pages(array $params = [], string $endpoint = '') {
-        if (!$token = $this->get_bearer_token()) {
+        if (!$token = $this->get_bearer_token('token.php')) {
             return false;
         }
 
