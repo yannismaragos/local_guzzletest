@@ -354,29 +354,12 @@ class Apihandler {
                 $fetchedresults = $response[$schema['records']];
 
                 if (!empty($fetchedresults)) {
-                    $results = array_merge($results, $this->process_results($fetchedresults));
+                    $results = array_merge($results, $fetchedresults);
                 }
             }
 
             $page++;
         } while (!empty($fetchedresults) && $page <= $totalpages && !PHPUNIT_TEST);
-
-        return $results;
-    }
-
-    /**
-     * Process results.
-     *
-     * @param array $resultdata An array of results.
-     *
-     * @return array An array of processed results.
-     */
-    public function process_results(array $resultdata): array {
-        $results = [];
-
-        foreach ($resultdata as $result) {
-            $results[] = $result;
-        }
 
         return $results;
     }
