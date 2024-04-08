@@ -25,8 +25,7 @@
 // phpcs:ignore
 require_once('../../config.php');
 
-use local_guzzletest\Apihandler as api;
-use GuzzleHttp\Client;
+use local_guzzletest\Apihandler;
 
 $context = \core\context\system::instance();
 $PAGE->set_context($context);
@@ -39,103 +38,36 @@ echo $OUTPUT->header();
 
 echo 'test-api-results </br>';
 echo '======================================================== </br>';
-echo 'get_bearer_from_api </br>';
+echo 'get_bearer_token </br>';
 echo '======================================================== </br>';
 
-$baseuri = 'http://universities.hipolabs.com';
-$api = new api($baseuri);
+$baseuri = new moodle_url('/local/guzzletest/api/json.php');
+$apihandler = new Apihandler($baseuri);
 $dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
     'U2MzQ1Nzg5IiwibmFtZSI6Ik5hbSBTdXBlciIsImlhdCI6MTUxNjIzOTAyMn0.' .
     'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
-$api->set_dummy_token($dummytoken);
-
-$token = $api->get_bearer_from_api();
+$apihandler->set_dummy_token($dummytoken);
+$token = $apihandler->get_bearer_token();
 
 // phpcs:ignore
 print_object($token);
 
 echo '======================================================== </br>';
 echo 'request_results </br>';
-echo 'http://universities.hipolabs.com/search?country=Greece </br>';
 echo '======================================================== </br>';
 
 if (empty($token)) {
     echo 'Bearer token not found </br>';
 } else {
-    die;
-
-    $page = isset($_GET['page']) ? $_GET['page'] : -1;
-    $limit = isset($_GET['limit']) ? $_GET['limit'] : 10;
-    $method = 'GET';
-    $uri = "https://aen.gov.gr/api/ws/students/list?page=$page&limit=$limit";
-    $headers = [
-        'accept-language' => 'en',
-        'authorization' => "Bearer $token",
-        'connection' => 'keep-alive',
-        'dnt' => '1',
-        'sec-fetch-dest' => 'empty',
-        'sec-fetch-mode' => 'cors',
-        'sec-fetch-site' => 'same-origin',
-        'sec-gpc' => '1',
-        'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-        'accept' => '*/*',
-        'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
-        'sec-ch-ua-mobile' => '?0',
-        'sec-ch-ua-platform' => 'Linux',
+    $params = [
+        'page' => optional_param('page', 1, PARAM_INT),
+        'limit' => optional_param('limit', 100, PARAM_INT),
     ];
 
-    if ($page >= 0) {
-        // Use the provided client or create a new client.
-        $client = new Client();
-        $response = $client->request($method, $uri, [
-            'headers' => $headers,
-        ]);
-        $statuscode = $response->getStatusCode();
+    $result = $apihandler->get_all_pages($params, '');
 
-        // Check if the API request was successful.
-        if ($statuscode === 200) {
-            $responsedata = json_decode($response->getBody(), true);
-
-            // Check if JSON decoding was successful and there were no errors.
-            if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
-                echo '<pre>';
-                // phpcs:ignore
-                print_object($responsedata);
-                echo '</pre>';
-            }
-        } else {
-            echo "Statuscode: $statuscode </br>";
-        }
-    } else {
-        $page = 1;
-
-        do {
-            $uri = "https://aen.gov.gr/api/ws/students/list?page=$page&limit=$limit";
-            $page++;
-
-            // Use the provided client or create a new client.
-            $client = new Client();
-            $response = $client->request($method, $uri, [
-                'headers' => $headers,
-            ]);
-            $statuscode = $response->getStatusCode();
-
-            // Check if the API request was successful.
-            if ($statuscode === 200) {
-                $responsedata = json_decode($response->getBody(), true);
-
-                // Check if JSON decoding was successful and there were no errors.
-                if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
-                    echo '<pre>';
-                    // phpcs:ignore
-                    print_object($responsedata);
-                    echo '</pre>';
-                }
-            } else {
-                echo "Statuscode: $statuscode </br>";
-            }
-        } while (!empty($responsedata['content']) && $statuscode === 200);
-    }
+    // phpcs:ignore
+    print_object($result);
 }
 
 echo $OUTPUT->footer();

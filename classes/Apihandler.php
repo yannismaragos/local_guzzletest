@@ -376,7 +376,7 @@ class Apihandler {
 
             if (empty($totalpages)) {
                 if (!empty($response[$schema['total_records']]) && !empty($response[$schema['page_number']])) {
-                    $totalpages = 0; //floor((int) $response[$schema['total_records']] / $params[$schema['page_limit']]);
+                    $totalpages = 1 + floor((int) $response[$schema['total_records']] / $params[$schema['page_limit']]);
                 }
             }
 
@@ -384,16 +384,12 @@ class Apihandler {
                 $fetchedresults = $response[$schema['records']];
 
                 if (!empty($fetchedresults)) {
-                    $results = array_merge($results, $fetchedresults);
+                    $results = array_merge($results, $this->process_results($fetchedresults));
                 }
             }
 
             $page++;
         } while (!empty($fetchedresults) && $page <= $totalpages && !PHPUNIT_TEST);
-
-        if (!empty($results)) {
-            $results = $this->process_results($results);
-        }
 
         return $results;
     }

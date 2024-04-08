@@ -47,7 +47,6 @@ $dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
     'U2MzQ1Nzg5IiwibmFtZSI6Ik5hbSBTdXBlciIsImlhdCI6MTUxNjIzOTAyMn0.' .
     'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
 $apihandler->set_dummy_token($dummytoken);
-
 $token = $apihandler->get_bearer_token();
 
 // phpcs:ignore
