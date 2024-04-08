@@ -121,8 +121,18 @@ class Apihandler {
      */
     public function __construct(string $baseuri) {
         $this->baseuri = rtrim($baseuri, '/');
+        $this->tokenheaders = $this->get_default_token_headers();
+        $this->requestheaders = $this->get_default_request_headers();
+        $this->schema = $this->get_default_response_schema();
+    }
 
-        $this->tokenheaders = [
+    /**
+     * Retrieves the default token headers.
+     *
+     * @return array The default token headers.
+     */
+    private function get_default_token_headers(): array {
+        return [
             'accept' => 'application/json, text/plain, */*',
             'accept-language' => 'en;q=0.9',
             'connection' => 'keep-alive',
@@ -140,8 +150,15 @@ class Apihandler {
             'sec-ch-ua-mobile' => '?0',
             'sec-ch-ua-platform' => 'Linux',
         ];
+    }
 
-        $this->requestheaders = [
+    /**
+     * Retrieves the default request headers.
+     *
+     * @return array The default request headers.
+     */
+    private function get_default_request_headers(): array {
+        return [
             'accept-language' => 'en',
             'connection' => 'keep-alive',
             'dnt' => '1',
@@ -155,8 +172,15 @@ class Apihandler {
             'sec-ch-ua-mobile' => '?0',
             'sec-ch-ua-platform' => 'Linux',
         ];
+    }
 
-        $this->schema = [
+    /**
+     * Retrieves the default response schema.
+     *
+     * @return array The default schema.
+     */
+    private function get_default_response_schema(): array {
+        return [
             'page_number' => 'page',
             'page_limit' => 'limit',
             'total_records' => 'total',
@@ -165,7 +189,7 @@ class Apihandler {
     }
 
     /**
-     * Sets the response schema for the API handler.
+     * Sets the response schema.
      *
      * @param array $schema The response schema to set.
      * @return void

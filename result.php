@@ -57,6 +57,13 @@ $params = [
     'limit' => optional_param('limit', 100, PARAM_INT),
 ];
 
+$apihandler->set_response_schema([
+    'page_number' => 'page',
+    'page_limit' => 'limit',
+    'total_records' => 'total',
+    'records' => 'records',
+]);
+
 $result = $apihandler->get_page('json.php', $params);
 
 // phpcs:ignore
