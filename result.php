@@ -38,7 +38,7 @@ echo $OUTPUT->header();
 
 echo 'test-api-result </br>';
 echo '======================================================== </br>';
-echo 'get_bearer_from_api </br>';
+echo 'get_bearer_token </br>';
 echo '======================================================== </br>';
 
 $baseuri = new moodle_url('/local/guzzletest/api/json.php');
@@ -48,7 +48,7 @@ $dummytoken = 'eyJhbGciOiJIUzI3NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxND' .
     'Kfl7xwRSJSMeKK2P4fqpwSfJM36POkVySFa_qJssw5c';
 $apihandler->set_dummy_token($dummytoken);
 
-$token = $apihandler->get_bearer_from_api();
+$token = $apihandler->get_bearer_token();
 
 // phpcs:ignore
 print_object($token);
@@ -65,7 +65,7 @@ if (empty($token)) {
         'limit' => optional_param('limit', 100, PARAM_INT),
     ];
 
-    $result = $apihandler->get_paginated_data($params, '');
+    $result = $apihandler->get_page($params, '');
 
     // phpcs:ignore
     print_object($result);

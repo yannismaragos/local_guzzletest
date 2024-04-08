@@ -94,7 +94,7 @@ class Apihandler {
      * Class constructor.
      */
     public function __construct(string $baseuri) {
-        $this->baseuri = $baseuri;
+        $this->baseuri = rtrim($baseuri, '/');
     }
 
     /**
@@ -143,7 +143,7 @@ class Apihandler {
      * @throws Exception If the API request was not successful or the token is not found.
      * @throws RequestException If there was an error in the API request.
      */
-    public function get_bearer_from_api() {
+    public function get_bearer_token() {
         if ($this->dummytoken) {
             return $this->dummytoken;
         }
@@ -200,7 +200,7 @@ class Apihandler {
 
             // The API request was not successful or token is not found.
             throw new Exception('Failed to obtain bearer token from API.', $statuscode);
-        } catch (RequestException | InvalidArgumentException | Exception $e) {
+        } catch (RequestException | Exception $e) {
             $errorresponse = [
                 'error' => $e->getCode(),
                 'message' => $e->getMessage(),
@@ -226,7 +226,7 @@ class Apihandler {
      *               if successful. If an error occurs during the request, the
      *               status code and error message are returned within an array.
      */
-    public function get_data_from_api(string $uri, string $token): array {
+    private function get_data_from_api(string $uri, string $token): array {
         // Validate input parameters.
         if (empty($uri) || empty($token)) {
             throw new InvalidArgumentException('Invalid URI or token.');
@@ -280,88 +280,136 @@ class Apihandler {
     }
 
     /**
-     * Retrieve data from an API endpoint.
+     * Retrieves the response schema for the API handler.
      *
-     * This function makes API requests to fetch data based on the
-     * provided parameters. It retrieves a list of results in paginated
-     * form and combines the results into an array.
-     *
-     * @return array|false An array of objects if successful, or false if
-     *                     the bearer token is not found.
+     * @return array The response schema.
      */
-    public function get_paginated_data(int $pagelimit = 10) {
+    private function get_response_schema(): array {
+        return [
+            'page_number' => 'page',
+            'page_limit' => 'limit',
+            'total_records' => 'total',
+            'records' => 'records',
+        ];
+    }
+
+    /**
+     * Retrieves a page of data from the API.
+     *
+     * @param array $params An array of parameters to be included in the API request.
+     * @param string $endpoint The endpoint to be appended to the base URI.
+     * @return array The processed results from the API response.
+     * @throws Exception If there is an error in the API response.
+     */
+    public function get_page(array $params = [], string $endpoint = '') {
         if ($this->dummytoken) {
             $token = $this->dummytoken;
         } else {
-            $token = $this->get_bearer_from_api();
+            $token = $this->get_bearer_token();
         }
 
         if (!$token) {
             return false;
         }
 
+        // We expect a specific format for the response.
+        $schema = $this->get_response_schema();
+
         $results = [];
-        $baseuri = $this->baseuri . '/search';
-        $page = 1;
-        $totalpages = 0;
+        $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
+        $uri = $baseuri . '?' . http_build_query($params, '', '&');
+        $response = $this->get_data_from_api($uri, $token);
+
+        if (!empty($response['error']) && !empty($response['message'])) {
+            throw new Exception('Error ' . $response['error'] . ': ' . $response['message']);
+        }
+
+        if (!empty($response[$schema['records']])) {
+            $results = $response[$schema['records']];
+
+            return $this->process_results($results);
+        }
+
+        return [];
+    }
+
+    /**
+     * Retrieves all pages of data from the API.
+     *
+     * This function makes API requests to fetch data based on the
+     * provided parameters. It retrieves a list of results in paginated
+     * form and combines the results into an array.
+     *
+     * @param array $params An array of parameters to be sent with the API request.
+     * @param string $endpoint The endpoint to be appended to the base URI.
+     * @return array|false An array of results if successful, false otherwise.
+     * @throws Exception If an error occurs during the API request.
+     */
+    public function get_all_pages(array $params = [], string $endpoint = '') {
+        if ($this->dummytoken) {
+            $token = $this->dummytoken;
+        } else {
+            $token = $this->get_bearer_token();
+        }
+
+        if (!$token) {
+            return false;
+        }
+
+        // We expect a specific format for the response.
+        $schema = $this->get_response_schema();
+
+        $results = [];
+        $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
+        $page = !empty($params[$schema['page_number']]) ? (int) $params[$schema['page_number']] : 1;
+        $totalpages = null;
 
         do {
-            $uri = "$baseuri?page=$page&limit=" . $pagelimit;
+            $params[$schema['page_number']] = $page;
+            $uri = $baseuri . '?' . http_build_query($params, '', '&');
             $response = $this->get_data_from_api($uri, $token);
 
             if (!empty($response['error']) && !empty($response['message'])) {
-                $this->log_message('Error ' . $response['error'] . ': ' . $response['message']);
+                throw new Exception('Error ' . $response['error'] . ': ' . $response['message']);
                 break;
             }
 
-            if ($page === 1) {
-                $totalpages = isset($response['pages']) ? (int) $response['pages'] : 0;
+            if (empty($totalpages)) {
+                if (!empty($response[$schema['total_records']]) && !empty($response[$schema['page_number']])) {
+                    $totalpages = 0; //floor((int) $response[$schema['total_records']] / $params[$schema['page_limit']]);
+                }
             }
 
-            if (!empty($response['content'])) {
-                $fetchedresults = $response['content'];
+            if (!empty($response[$schema['records']])) {
+                $fetchedresults = $response[$schema['records']];
+
+                if (!empty($fetchedresults)) {
+                    $results = array_merge($results, $fetchedresults);
+                }
             }
-
-            $results = array_merge($results, $fetchedresults);
-
-            // Log response code for each fetched page.
-            $this->log_message('Page ' . $page . ': ' . $response['status_code']);
 
             $page++;
         } while (!empty($fetchedresults) && $page <= $totalpages && !PHPUNIT_TEST);
 
-        // Log total fetched pages.
-        $this->log_message(get_string('totalfetchedpages', 'local_guzzletest', ['fetched' => $page - 1, 'total' => $totalpages]));
-
-        // Log total results count that are fetched from API.
-        $this->log_message(get_string('totalresults', 'local_guzzletest', count($results)));
-
         if (!empty($results)) {
-            $results = $this->create_objects($results);
+            $results = $this->process_results($results);
         }
 
         return $results;
     }
 
     /**
-     * Create objects from an array of data.
+     * Process results.
      *
-     * This function takes an array of data and constructs individual
-     * objects with specific properties.
+     * @param array $resultdata An array of results.
      *
-     * @param array $resultdata An array of arrays.
-     *
-     * @return array An array of objects.
+     * @return array An array of processed results.
      */
-    public function create_objects(array $resultdata): array {
+    public function process_results(array $resultdata): array {
         $results = [];
 
         foreach ($resultdata as $result) {
-            $object = new \stdClass();
-            // $object->firstname = $result['firstName'] ?? '';
-            // $object->lastname = $result['lastName'] ?? '';
-
-            $results[] = $object;
+            $results[] = $result;
         }
 
         return $results;
