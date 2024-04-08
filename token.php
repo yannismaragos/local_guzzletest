@@ -29,7 +29,7 @@ use local_guzzletest\Apihandler;
 
 $context = \core\context\system::instance();
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/guzzletest/api/bearer.php'));
+$PAGE->set_url(new moodle_url('/local/guzzletest/token.php'));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('pluginname', 'local_guzzletest'));
 $PAGE->set_heading(get_string('pluginname', 'local_guzzletest'));

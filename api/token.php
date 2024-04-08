@@ -25,6 +25,21 @@
 // phpcs:ignore moodle.Files.RequireLogin.Missing
 require_once('../../../config.php');
 
+$loginfailed = false;
+
+// Simulate a failed login.
+if ($loginfailed) {
+    header('HTTP/1.1 401 Unauthorized');
+    header('Content-Type: application/json');
+    echo json_encode([
+        'error' => [
+            'code' => 401,
+            'message' => 'Unauthorized: Invalid username or password.',
+        ],
+    ]);
+    exit;
+}
+
 // Generate a bearer token.
 $token = bin2hex(random_bytes(16));
 
