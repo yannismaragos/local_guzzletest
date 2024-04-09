@@ -46,18 +46,6 @@ use JsonException;
  */
 class Apihandler {
     /**
-     * Exception codes.
-     *
-     * 3000 series for network-related exceptions
-     * 4000 series for API-related exceptions
-     */
-    const EXCEPTION_CONNECTION = 3001;
-    const EXCEPTION_API_REQUEST = 4001;
-    const EXCEPTION_BEARER_TOKEN = 4002;
-    const EXCEPTION_INVALID_URI = 4003;
-    const EXCEPTION_JSON_DECODE = 4004;
-
-    /**
      * The base URI.
      *
      * @var string
@@ -91,6 +79,25 @@ class Apihandler {
      * @var string
      */
     private $schema;
+
+    /**
+     * Exception codes.
+     *
+     * 3000 series for network-related exceptions
+     * 4000 series for API-related exceptions
+     */
+    const EXCEPTION_CONNECTION = 3001;
+    const EXCEPTION_API_REQUEST = 4001;
+    const EXCEPTION_BEARER_TOKEN = 4002;
+    const EXCEPTION_INVALID_URI = 4003;
+    const EXCEPTION_JSON_DECODE = 4004;
+
+    /**
+     * The timeout value for API requests.
+     *
+     * @var int
+     */
+    const TIMEOUT = 20;
 
     /**
      * Constructs a new instance of the Apihandler class.
@@ -273,7 +280,7 @@ class Apihandler {
                 $response = $client->request('POST', $uri, [
                     'headers' => $this->authheaders,
                     'body' => $body,
-                    'timeout' => 20,
+                    'timeout' => self::TIMEOUT,
                 ]);
                 break;
             } catch (RequestException $e) {
@@ -338,7 +345,7 @@ class Apihandler {
             try {
                 $response = $client->request('GET', $uri, [
                     'headers' => $this->requestheaders,
-                    'timeout' => 20,
+                    'timeout' => self::TIMEOUT,
                 ]);
                 break;
             } catch (RequestException $e) {
