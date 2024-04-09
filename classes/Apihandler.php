@@ -344,7 +344,7 @@ class Apihandler {
             } catch (RequestException $e) {
                 $attempts++;
                 if ($attempts >= 3) {
-                    throw new Exception('Failed to connect to API.', self::EXCEPTION_CONNECTION);
+                    throw new Exception('Failed to connect to API after 3 attempts.', self::EXCEPTION_CONNECTION);
                 }
             }
         }
