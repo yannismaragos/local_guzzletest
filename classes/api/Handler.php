@@ -140,7 +140,7 @@ class Handler {
      * @param array $credentials The user's credentials.
      * @param Tokengenerator $tokengenerator The token generator object.
      * @return void
-     * @throws InvalidArgumentException If credentials are missing.
+     * @throws InvalidArgumentException If credentials or tokengenerator are missing.
      */
     public function authenticate(array $credentials, Tokengenerator $tokengenerator): void {
         if (!isset($credentials['username'], $credentials['password'])) {
