@@ -92,6 +92,7 @@ class Config {
             // Argument related exceptions.
             'EXCEPTION_INVALID_URI' => 5001,
             'EXCEPTION_MISSING_CREDENTIALS' => 5002,
+            'EXCEPTION_MISSING_TOKENGENERATOR' => 5003,
             // Settings related exceptions.
             'EXCEPTION_SETTING' => 6001,
             // Other settings.

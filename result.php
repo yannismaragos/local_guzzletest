@@ -49,8 +49,15 @@ echo '======================================================== </br>';
 $baseuri = new moodle_url('/local/guzzletest/api');
 $client = new Client();
 $config = Config::get_instance($baseuri->out(), $client);
+$apihandler = new Handler($config);
+
+// Authenticate.
+$credentials = [
+    'username' => 'myusername',
+    'password' => 'mypassword',
+    'endpoint' => 'token.php',
+];
 $tokengenerator = new Tokengenerator($config);
-$apihandler = new Handler($config, $tokengenerator);
 
 // Set authentication headers.
 $tokengenerator->set_authentication_headers([
@@ -72,13 +79,7 @@ $tokengenerator->set_authentication_headers([
     'sec-ch-ua-platform' => 'Linux',
 ]);
 
-// Authenticate.
-$credentials = [
-    'username' => 'myusername',
-    'password' => 'mypassword',
-    'endpoint' => 'token.php',
-];
-$apihandler->authenticate($credentials);
+$apihandler->authenticate($credentials, $tokengenerator);
 
 // Set response schema.
 $apihandler->set_response_schema([

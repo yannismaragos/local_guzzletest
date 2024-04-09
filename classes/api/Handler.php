@@ -54,13 +54,6 @@ class Handler {
     private $config;
 
     /**
-     * The token generator object.
-     *
-     * @var Tokengenerator
-     */
-    private $tokengenerator;
-
-    /**
      * The headers for the API request.
      *
      * @var array
@@ -78,11 +71,9 @@ class Handler {
      * Constructor for the Handler class.
      *
      * @param Config $config The configuration object.
-     * @param Tokengenerator $tokengenerator The token generator object.
      */
-    public function __construct(Config $config, Tokengenerator $tokengenerator) {
+    public function __construct(Config $config) {
         $this->config = $config;
-        $this->tokengenerator = $tokengenerator;
         $this->requestheaders = $this->get_default_request_headers();
         $this->schema = $this->get_default_response_schema();
     }
@@ -147,10 +138,11 @@ class Handler {
      * bearer token in the request headers.
      *
      * @param array $credentials The user's credentials.
+     * @param Tokengenerator $tokengenerator The token generator object.
      * @return void
      * @throws InvalidArgumentException If credentials are missing.
      */
-    public function authenticate(array $credentials): void {
+    public function authenticate(array $credentials, Tokengenerator $tokengenerator): void {
         if (!isset($credentials['username'], $credentials['password'])) {
             throw new InvalidArgumentException(
                 'Missing credentials in authenticate method.',
@@ -158,7 +150,14 @@ class Handler {
             );
         }
 
-        $token = $this->tokengenerator->get_bearer_token(
+        if (!isset($tokengenerator)) {
+            throw new InvalidArgumentException(
+                'Missing tokengenerator.',
+                $this->config->get_setting('EXCEPTION_MISSING_TOKENGENERATOR')
+            );
+        }
+
+        $token = $tokengenerator->get_bearer_token(
             $credentials['username'],
             $credentials['password'],
             $credentials['endpoint'] ?? ''
