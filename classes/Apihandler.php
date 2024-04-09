@@ -129,7 +129,7 @@ class Apihandler {
      *
      * @return array The default authentication headers.
      */
-    private function get_default_auth_headers(): array {
+    public function get_default_auth_headers(): array {
         return [
             'accept' => 'application/json, text/plain, */*',
             'accept-language' => 'en',
@@ -155,7 +155,7 @@ class Apihandler {
      *
      * @return array The default request headers.
      */
-    private function get_default_request_headers(): array {
+    public function get_default_request_headers(): array {
         return [
             'accept' => '*/*',
             'accept-language' => 'en',
@@ -177,7 +177,7 @@ class Apihandler {
      *
      * @return array The default schema.
      */
-    private function get_default_response_schema(): array {
+    public function get_default_response_schema(): array {
         return [
             'page_number' => 'page',
             'page_limit' => 'limit',
