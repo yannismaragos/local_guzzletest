@@ -51,7 +51,7 @@ $client = new Client();
 $config = Config::get_instance($baseuri->out(), $client);
 $apihandler = new Handler($config);
 
-// Authenticate.
+// Authenticate (optional).
 $credentials = [
     'username' => 'myusername',
     'password' => 'mypassword',
