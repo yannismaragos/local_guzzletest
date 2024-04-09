@@ -76,7 +76,7 @@ class Apihandler {
     /**
      * The response schema used by the API handler.
      *
-     * @var string
+     * @var array
      */
     private $schema;
 
@@ -194,6 +194,15 @@ class Apihandler {
      */
     public function set_response_schema(array $schema): void {
         $this->schema = $schema;
+    }
+
+    /**
+     * Retrieves the response schema.
+     *
+     * @return array The response schema.
+     */
+    public function get_response_schema(): array {
+        return $this->schema;
     }
 
     /**
