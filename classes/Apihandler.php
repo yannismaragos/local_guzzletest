@@ -32,6 +32,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
 use Exception;
+use JsonException;
 
 /**
  * A class for interacting with remote APIs.
@@ -47,15 +48,15 @@ class Apihandler {
     /**
      * Exception codes.
      *
-     * 1000 series for database-related exceptions
-     * 2000 series for file I/O exceptions
      * 3000 series for network-related exceptions
      * 4000 series for API-related exceptions
      */
-    const EXCEPTION_BEARER_TOKEN = 4001;
-    const EXCEPTION_INVALID_PARAMETER = 4002;
-    const EXCEPTION_JSON_DECODING_ERROR = 4003;
-    const EXCEPTION_API_RESPONSE_ERROR = 4004;
+    const EXCEPTION_CONNECTION = 3001;
+    const EXCEPTION_API_REQUEST = 4001;
+    const EXCEPTION_BEARER_TOKEN = 4002;
+    const EXCEPTION_INVALID_URI = 4003;
+    const EXCEPTION_JSON_DECODE = 4004;
+    const EXCEPTION_API_RESPONSE = 4005;
 
     /**
      * The base URI.
@@ -254,8 +255,9 @@ class Apihandler {
      *
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @return string The bearer token if authentication is successful.
-     * @throws Exception If the API request was not successful or the token is not found.
-     * @throws RequestException If there was an error in the API request.
+     * @throws RequestException If there is an error in the API request.
+     * @throws Exception If the API request is unsuccessful, or the token is not found.
+     * @throws JsonException If JSON decoding is unsuccessful.
      */
     private function get_bearer_token(string $endpoint = ''): string {
         $uri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
@@ -270,31 +272,44 @@ class Apihandler {
         // Use the provided client or create a new client.
         $client = $this->httpclient ?? new Client();
 
-        try {
-            $response = $client->request('POST', $uri, [
-                'headers' => $this->authheaders,
-                'body' => $body,
-                'timeout' => 20,
-            ]);
-            $statuscode = $response->getStatusCode();
-            $responsedata = json_decode($response->getBody(), true);
-
-            // Check if the API request was successful.
-            if ($statuscode === 200) {
-                // Check if JSON decoding was successful and there were no errors.
-                if ($responsedata !== null && json_last_error() == JSON_ERROR_NONE) {
-                    if (!empty($responsedata['token'])) {
-                        $token = $responsedata['token'];
-                        return $token;
-                    }
+        // Make up to 3 attempts to connect to the API.
+        $attempts = 0;
+        while ($attempts < 3) {
+            try {
+                $response = $client->request('POST', $uri, [
+                    'headers' => $this->authheaders,
+                    'body' => $body,
+                    'timeout' => 20,
+                ]);
+                break;
+            } catch (RequestException $e) {
+                $attempts++;
+                if ($attempts >= 3) {
+                    throw new Exception('Failed to connect to API after 3 attempts.', self::EXCEPTION_CONNECTION);
                 }
             }
-
-            // The API request was not successful or token is not found.
-            throw new Exception('Failed to obtain bearer token from API.', self::EXCEPTION_BEARER_TOKEN);
-        } catch (RequestException | Exception $e) {
-            throw $e;
         }
+
+        $statuscode = $response->getStatusCode();
+
+        // Check if the API request was successful.
+        if ($statuscode !== 200) {
+            throw new Exception('API request failed with status code: ' . $statuscode, self::EXCEPTION_API_REQUEST);
+        }
+
+        $responsedata = json_decode($response->getBody(), true);
+
+        // Check if JSON decoding was successful and there were no errors.
+        if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
+            throw new JsonException('Failed to decode JSON from API response.', self::EXCEPTION_JSON_DECODE);
+        }
+
+        // Check if the token is found in the API response.
+        if (empty($responsedata['token'])) {
+            throw new Exception('Bearer token not found in API response.', self::EXCEPTION_BEARER_TOKEN);
+        }
+
+        return $responsedata['token'];
     }
 
     /**
@@ -309,38 +324,52 @@ class Apihandler {
      * @param string $uri The URI to send the API request to.
      * @return array An array containing the data retrieved from the API
      *               if successful.
-     * @throws RequestException If there was an error in the API request.
      * @throws InvalidArgumentException If there is an invalid argument.
-     * @throws Exception If null or JSON decoding fails.
+     * @throws RequestException If there is an error in the API request.
+     * @throws Exception If the API request is unsuccessful.
+     * @throws JsonException If JSON decoding is unsuccessful.
      */
     private function get_data_from_uri(string $uri): array {
-        // Validate input parameters.
-        if (empty($uri)) {
-            throw new InvalidArgumentException('Invalid URI.', self::EXCEPTION_INVALID_PARAMETER);
+        // Validate uri.
+        if (empty($uri) || !filter_var($uri, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException('Invalid URI.', self::EXCEPTION_INVALID_URI);
         }
 
         // Use the provided client or create a new client.
         $client = $this->httpclient ?? new Client();
 
-        try {
-            $response = $client->request('GET', $uri, [
-                'headers' => $this->requestheaders,
-                'timeout' => 20,
-            ]);
-
-            $responsedata = json_decode($response->getBody(), true);
-
-            // Check if JSON decoding was successful and there were no errors.
-            if ($responsedata !== null && json_last_error() === JSON_ERROR_NONE) {
-                $responsedata['status_code'] = $response->getStatusCode();
-                return $responsedata;
+        // Make up to 3 attempts to connect to the API.
+        $attempts = 0;
+        while ($attempts < 3) {
+            try {
+                $response = $client->request('GET', $uri, [
+                    'headers' => $this->requestheaders,
+                    'timeout' => 20,
+                ]);
+                break;
+            } catch (RequestException $e) {
+                $attempts++;
+                if ($attempts >= 3) {
+                    throw new Exception('Failed to connect to API.', self::EXCEPTION_CONNECTION);
+                }
             }
-
-            // If null or JSON decoding fails.
-            throw new Exception('Error decoding JSON data: ' . json_last_error_msg(), self::EXCEPTION_JSON_DECODING_ERROR);
-        } catch (RequestException | InvalidArgumentException | Exception $e) {
-            throw $e;
         }
+
+        $statuscode = $response->getStatusCode();
+
+        // Check if the API request was successful.
+        if ($statuscode !== 200) {
+            throw new Exception('API request failed with status code: ' . $statuscode, self::EXCEPTION_API_REQUEST);
+        }
+
+        $responsedata = json_decode($response->getBody(), true);
+
+        // Check if JSON decoding was successful and there were no errors.
+        if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
+            throw new JsonException('Failed to decode JSON from API response: ' . json_last_error_msg(), self::EXCEPTION_JSON_DECODE);
+        }
+
+        return $responsedata;
     }
 
     /**
@@ -349,16 +378,11 @@ class Apihandler {
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @param array $params An array of parameters to be included in the API request.
      * @return array The processed results from the API response.
-     * @throws Exception If there is an error in the API response.
      */
     public function get_page(string $endpoint = '', array $params = []) {
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $uri = $baseuri . '?' . http_build_query($params, '', '&');
         $response = $this->get_data_from_uri($uri);
-
-        if (!empty($response['error']) && !empty($response['message'])) {
-            throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
-        }
 
         if (!empty($response[$this->schema['records']])) {
             return $response[$this->schema['records']];
@@ -377,7 +401,6 @@ class Apihandler {
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @param array $params An array of parameters to be sent with the API request.
      * @return array|false An array of results if successful, false otherwise.
-     * @throws Exception If an error occurs during the API request.
      */
     public function get_all_pages(string $endpoint = '', array $params = []) {
         $results = [];
@@ -389,11 +412,6 @@ class Apihandler {
             $params[$this->schema['page_number']] = $page;
             $uri = $baseuri . '?' . http_build_query($params, '', '&');
             $response = $this->get_data_from_uri($uri);
-
-            if (!empty($response['error']) && !empty($response['message'])) {
-                throw new Exception('Error ' . $response['error'] . ': ' . $response['message'], self::EXCEPTION_API_RESPONSE_ERROR);
-                break;
-            }
 
             if (empty($totalpages)) {
                 if (!empty($response[$this->schema['total_records']]) && !empty($response[$this->schema['page_number']])) {
