@@ -89,6 +89,7 @@ class Config {
             'EXCEPTION_API_REQUEST' => 4001,
             'EXCEPTION_BEARER_TOKEN' => 4002,
             'EXCEPTION_JSON_DECODE' => 4003,
+            'EXCEPTION_CLIENT_NULL' => 4004,
             // Argument related exceptions.
             'EXCEPTION_INVALID_URI' => 5001,
             'EXCEPTION_MISSING_CREDENTIALS' => 5002,

@@ -144,6 +144,10 @@ class Tokengenerator {
 
         $client = $this->config->get_http_client();
 
+        if ($client === null) {
+            throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CLIENT_NULL'));
+        }
+
         // Make up to 3 attempts to connect to the API.
         $attempts = 0;
         while ($attempts < 3) {
