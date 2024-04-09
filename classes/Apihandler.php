@@ -81,15 +81,28 @@ class Apihandler {
     private $schema;
 
     /**
-     * Exception codes.
-     *
-     * 3000 series for network-related exceptions
-     * 4000 series for API-related exceptions
+     * Exception code for connection errors.
      */
     const EXCEPTION_CONNECTION = 3001;
+
+    /**
+     * Exception code for API request errors.
+     */
     const EXCEPTION_API_REQUEST = 4001;
+
+    /**
+     * Exception code for bearer token not found.
+     */
     const EXCEPTION_BEARER_TOKEN = 4002;
+
+    /**
+     * Exception code for invalid URI.
+     */
     const EXCEPTION_INVALID_URI = 4003;
+
+    /**
+     * Exception code for JSON decoding errors.
+     */
     const EXCEPTION_JSON_DECODE = 4004;
 
     /**
@@ -367,7 +380,10 @@ class Apihandler {
 
         // Check if JSON decoding was successful and there were no errors.
         if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
-            throw new JsonException('Failed to decode JSON from API response: ' . json_last_error_msg(), self::EXCEPTION_JSON_DECODE);
+            throw new JsonException(
+                'Failed to decode JSON from API response: ' . json_last_error_msg(),
+                self::EXCEPTION_JSON_DECODE
+            );
         }
 
         return $responsedata;

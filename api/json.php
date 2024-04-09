@@ -56,7 +56,7 @@ $response = json_encode([
     'page' => $page,
     'limit' => $limit,
     'total' => count($data),
-    'records' => $records
+    'records' => $records,
 ]);
 
 header('Content-Type: application/json');

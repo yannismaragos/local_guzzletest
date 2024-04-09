@@ -44,7 +44,7 @@ if ($loginfailed) {
 $token = bin2hex(random_bytes(16));
 
 $response = json_encode([
-    'token' => $token
+    'token' => $token,
 ]);
 
 header('Content-Type: application/json');
