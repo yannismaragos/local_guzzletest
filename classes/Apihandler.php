@@ -56,7 +56,6 @@ class Apihandler {
     const EXCEPTION_BEARER_TOKEN = 4002;
     const EXCEPTION_INVALID_URI = 4003;
     const EXCEPTION_JSON_DECODE = 4004;
-    const EXCEPTION_API_RESPONSE = 4005;
 
     /**
      * The base URI.
@@ -71,20 +70,6 @@ class Apihandler {
      * @var Client
      */
     private $httpclient;
-
-    /**
-     * The username for authentication.
-     *
-     * @var string
-     */
-    private $username;
-
-    /**
-     * The password for authentication.
-     *
-     * @var string
-     */
-    private $password;
 
     /**
      * The headers for the API authentication.
@@ -208,11 +193,18 @@ class Apihandler {
      *
      * @param array $credentials The user's credentials.
      * @return void
+     * @throws InvalidArgumentException If credentials are missing.
      */
     public function authenticate(array $credentials): void {
-        $this->username = $credentials['username'];
-        $this->password = $credentials['password'];
-        $token = $this->get_bearer_token($credentials['endpoint']);
+        if (!isset($credentials['username'], $credentials['password'])) {
+            throw new InvalidArgumentException('Missing credentials');
+        }
+
+        $token = $this->get_bearer_token(
+            $credentials['username'],
+            $credentials['password'],
+            $credentials['endpoint'] ?? ''
+        );
         $this->requestheaders['authorization'] = "Bearer $token";
     }
 
@@ -253,19 +245,21 @@ class Apihandler {
      * authentication credentials in the request body and expects a successful
      * response with a token field.
      *
+     * @param string $username The username for authentication.
+     * @param string $password The password for authentication.
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @return string The bearer token if authentication is successful.
      * @throws RequestException If there is an error in the API request.
      * @throws Exception If the API request is unsuccessful, or the token is not found.
      * @throws JsonException If JSON decoding is unsuccessful.
      */
-    private function get_bearer_token(string $endpoint = ''): string {
+    private function get_bearer_token(string $username, string $password, string $endpoint = ''): string {
         $uri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
 
         // Define the JSON payload.
         $body = json_encode([
-            "username" => $this->username,
-            "password" => $this->password,
+            "username" => $username,
+            "password" => $password,
             "type" => "1",
         ]);
 
