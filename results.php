@@ -25,8 +25,12 @@
 // phpcs:ignore
 require_once('../../config.php');
 
-use local_guzzletest\Apihandler;
+use local_guzzletest\api\Handler;
+use GuzzleHttp\Client;
+use local_guzzletest\api\Tokengenerator;
+use local_guzzletest\api\Config;
 
+// Setup the page.
 $context = \core\context\system::instance();
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/guzzletest/results.php'));
@@ -43,10 +47,13 @@ echo '======================================================== </br>';
 
 // New apihandler object.
 $baseuri = new moodle_url('/local/guzzletest/api');
-$apihandler = new Apihandler($baseuri->out());
+$client = new Client();
+$config = Config::get_instance($baseuri->out(), $client);
+$tokengenerator = new Tokengenerator($config);
+$apihandler = new Handler($config, $tokengenerator);
 
 // Set authentication headers.
-$apihandler->set_authentication_headers([
+$tokengenerator->set_authentication_headers([
     'accept' => 'application/json, text/plain, */*',
     'accept-language' => 'en',
     'connection' => 'keep-alive',

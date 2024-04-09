@@ -26,9 +26,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_guzzletest;
+namespace local_guzzletest\api;
 
-use GuzzleHttp\Client;
+use local_guzzletest\api\Config;
+use local_guzzletest\api\Tokengenerator;
 use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
 use Exception;
@@ -44,27 +45,20 @@ use JsonException;
  * @copyright  2024 onwards WIDE Services {@link https://www.wideservices.gr}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class Apihandler {
+class Handler {
     /**
-     * The base URI.
+     * The configuration object.
      *
-     * @var string
+     * @var Config
      */
-    private $baseuri;
+    private $config;
 
     /**
-     * The HTTP client.
+     * The token generator object.
      *
-     * @var Client
+     * @var Tokengenerator
      */
-    private $httpclient;
-
-    /**
-     * The headers for the API authentication.
-     *
-     * @var array
-     */
-    private $authheaders;
+    private $tokengenerator;
 
     /**
      * The headers for the API request.
@@ -81,73 +75,16 @@ class Apihandler {
     private $schema;
 
     /**
-     * Exception code for connection errors.
-     */
-    const EXCEPTION_CONNECTION = 3001;
-
-    /**
-     * Exception code for API request errors.
-     */
-    const EXCEPTION_API_REQUEST = 4001;
-
-    /**
-     * Exception code for bearer token not found.
-     */
-    const EXCEPTION_BEARER_TOKEN = 4002;
-
-    /**
-     * Exception code for invalid URI.
-     */
-    const EXCEPTION_INVALID_URI = 4003;
-
-    /**
-     * Exception code for JSON decoding errors.
-     */
-    const EXCEPTION_JSON_DECODE = 4004;
-
-    /**
-     * The timeout value for API requests.
+     * Constructor for the Handler class.
      *
-     * @var int
+     * @param Config $config The configuration object.
+     * @param Tokengenerator $tokengenerator The token generator object.
      */
-    const TIMEOUT = 20;
-
-    /**
-     * Constructs a new instance of the Apihandler class.
-     *
-     * @param string $baseuri The base URI for the API.
-     */
-    public function __construct(string $baseuri) {
-        $this->baseuri = rtrim($baseuri, '/');
-        $this->authheaders = $this->get_default_auth_headers();
+    public function __construct(Config $config, Tokengenerator $tokengenerator) {
+        $this->config = $config;
+        $this->tokengenerator = $tokengenerator;
         $this->requestheaders = $this->get_default_request_headers();
         $this->schema = $this->get_default_response_schema();
-    }
-
-    /**
-     * Retrieves the default authentication headers.
-     *
-     * @return array The default authentication headers.
-     */
-    public function get_default_auth_headers(): array {
-        return [
-            'accept' => 'application/json, text/plain, */*',
-            'accept-language' => 'en',
-            'connection' => 'keep-alive',
-            'content-type' => 'application/json',
-            'dnt' => '1',
-            'origin' => $this->baseuri,
-            'referer' => $this->baseuri . '/login/',
-            'sec-fetch-dest' => 'empty',
-            'sec-fetch-mode' => 'cors',
-            'sec-fetch-site' => 'same-origin',
-            'sec-gpc' => '1',
-            'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-            'x-access-level' => '74',
-            'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
-            'sec-ch-ua-mobile' => '?0',
-            'sec-ch-ua-platform' => 'Linux',
-        ];
     }
 
     /**
@@ -206,18 +143,7 @@ class Apihandler {
     }
 
     /**
-     * Set the HTTP client instance.
-     *
-     * @param Client $httpclient The HTTP client instance.
-     *
-     * @return void
-     */
-    public function set_http_client(Client $httpclient): void {
-        $this->httpclient = $httpclient;
-    }
-
-    /**
-     * Authenticates the user using the provided credentials,  and sets the
+     * Authenticates the user using the provided credentials, and sets the
      * bearer token in the request headers.
      *
      * @param array $credentials The user's credentials.
@@ -226,27 +152,18 @@ class Apihandler {
      */
     public function authenticate(array $credentials): void {
         if (!isset($credentials['username'], $credentials['password'])) {
-            throw new InvalidArgumentException('Missing credentials');
+            throw new InvalidArgumentException(
+                'Missing credentials in authenticate method.',
+                $this->config->get_setting('EXCEPTION_MISSING_CREDENTIALS')
+            );
         }
 
-        $token = $this->get_bearer_token(
+        $token = $this->tokengenerator->get_bearer_token(
             $credentials['username'],
             $credentials['password'],
             $credentials['endpoint'] ?? ''
         );
         $this->requestheaders['authorization'] = "Bearer $token";
-    }
-
-    /**
-     * Sets the authentication headers for the API request.
-     *
-     * @param array $headers The authentication headers to be set.
-     * @return void
-     */
-    public function set_authentication_headers(array $headers): void {
-        if (!empty($headers)) {
-            $this->authheaders = $headers;
-        }
     }
 
     /**
@@ -267,75 +184,6 @@ class Apihandler {
     }
 
     /**
-     * Get a bearer token from an API by sending an authentication request.
-     *
-     * This function sends an HTTP POST request to the specified URI to
-     * authenticate and retrieve a bearer token. It uses the provided
-     * authentication credentials in the request body and expects a successful
-     * response with a token field.
-     *
-     * @param string $username The username for authentication.
-     * @param string $password The password for authentication.
-     * @param string $endpoint The endpoint to be appended to the base URI.
-     * @return string The bearer token if authentication is successful.
-     * @throws RequestException If there is an error in the API request.
-     * @throws Exception If the API request is unsuccessful, or the token is not found.
-     * @throws JsonException If JSON decoding is unsuccessful.
-     */
-    private function get_bearer_token(string $username, string $password, string $endpoint = ''): string {
-        $uri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
-
-        // Define the JSON payload.
-        $body = json_encode([
-            "username" => $username,
-            "password" => $password,
-            "type" => "1",
-        ]);
-
-        // Use the provided client or create a new client.
-        $client = $this->httpclient ?? new Client();
-
-        // Make up to 3 attempts to connect to the API.
-        $attempts = 0;
-        while ($attempts < 3) {
-            try {
-                $response = $client->request('POST', $uri, [
-                    'headers' => $this->authheaders,
-                    'body' => $body,
-                    'timeout' => self::TIMEOUT,
-                ]);
-                break;
-            } catch (RequestException $e) {
-                $attempts++;
-                if ($attempts >= 3) {
-                    throw new Exception('Failed to connect to API after 3 attempts.', self::EXCEPTION_CONNECTION);
-                }
-            }
-        }
-
-        $statuscode = $response->getStatusCode();
-
-        // Check if the API request was successful.
-        if ($statuscode !== 200) {
-            throw new Exception('API request failed with status code: ' . $statuscode, self::EXCEPTION_API_REQUEST);
-        }
-
-        $responsedata = json_decode($response->getBody(), true);
-
-        // Check if JSON decoding was successful and there were no errors.
-        if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
-            throw new JsonException('Failed to decode JSON from API response.', self::EXCEPTION_JSON_DECODE);
-        }
-
-        // Check if the token is found in the API response.
-        if (empty($responsedata['token'])) {
-            throw new Exception('Bearer token not found in API response.', self::EXCEPTION_BEARER_TOKEN);
-        }
-
-        return $responsedata['token'];
-    }
-
-    /**
      * Send an HTTP GET request to a specified URI with authentication headers
      * and process the API response to retrieve data.
      *
@@ -345,8 +193,7 @@ class Apihandler {
      * response data to extract information.
      *
      * @param string $uri The URI to send the API request to.
-     * @return array An array containing the data retrieved from the API
-     *               if successful.
+     * @return array An array containing the data retrieved from the API if successful.
      * @throws InvalidArgumentException If there is an invalid argument.
      * @throws RequestException If there is an error in the API request.
      * @throws Exception If the API request is unsuccessful.
@@ -355,25 +202,28 @@ class Apihandler {
     private function get_data_from_uri(string $uri): array {
         // Validate uri.
         if (empty($uri) || !filter_var($uri, FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException('Invalid URI.', self::EXCEPTION_INVALID_URI);
+            throw new InvalidArgumentException('Invalid URI.', $this->config->get_setting('EXCEPTION_INVALID_URI'));
         }
 
-        // Use the provided client or create a new client.
-        $client = $this->httpclient ?? new Client();
+        $client = $this->config->get_http_client();
 
         // Make up to 3 attempts to connect to the API.
         $attempts = 0;
+
         while ($attempts < 3) {
             try {
                 $response = $client->request('GET', $uri, [
                     'headers' => $this->requestheaders,
-                    'timeout' => self::TIMEOUT,
+                    'timeout' => $this->config->get_setting('TIMEOUT'),
                 ]);
                 break;
             } catch (RequestException $e) {
                 $attempts++;
                 if ($attempts >= 3) {
-                    throw new Exception('Failed to connect to API after 3 attempts.', self::EXCEPTION_CONNECTION);
+                    throw new Exception(
+                        'Failed to connect to API after 3 attempts.',
+                        $this->config->get_setting('EXCEPTION_CONNECTION')
+                    );
                 }
             }
         }
@@ -382,7 +232,10 @@ class Apihandler {
 
         // Check if the API request was successful.
         if ($statuscode !== 200) {
-            throw new Exception('API request failed with status code: ' . $statuscode, self::EXCEPTION_API_REQUEST);
+            throw new Exception(
+                'API request failed with status code: ' . $statuscode,
+                $this->config->get_setting('EXCEPTION_API_REQUEST')
+            );
         }
 
         $responsedata = json_decode($response->getBody(), true);
@@ -391,7 +244,7 @@ class Apihandler {
         if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
             throw new JsonException(
                 'Failed to decode JSON from API response: ' . json_last_error_msg(),
-                self::EXCEPTION_JSON_DECODE
+                $this->config->get_setting('EXCEPTION_JSON_DECODE')
             );
         }
 
@@ -406,7 +259,9 @@ class Apihandler {
      * @return array The results from the API response.
      */
     public function get_page(string $endpoint = '', array $params = []): array {
-        $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
+        $baseuri = !empty($endpoint)
+            ? $this->config->get_base_uri() . '/' . trim($endpoint, '/')
+            : $this->config->get_base_uri();
         $uri = $baseuri . '?' . http_build_query($params, '', '&');
         $response = $this->get_data_from_uri($uri);
 
@@ -430,7 +285,9 @@ class Apihandler {
      */
     public function get_all_pages(string $endpoint = '', array $params = []): array {
         $results = [];
-        $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
+        $baseuri = !empty($endpoint)
+            ? $this->config->get_base_uri() . '/' . trim($endpoint, '/')
+            : $this->config->get_base_uri();
         $page = !empty($params[$this->schema['page_number']]) ? (int) $params[$this->schema['page_number']] : 1;
         $totalpages = null;
 
