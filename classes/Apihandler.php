@@ -371,9 +371,9 @@ class Apihandler {
      *
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @param array $params An array of parameters to be included in the API request.
-     * @return array The processed results from the API response.
+     * @return array The results from the API response.
      */
-    public function get_page(string $endpoint = '', array $params = []) {
+    public function get_page(string $endpoint = '', array $params = []): array {
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $uri = $baseuri . '?' . http_build_query($params, '', '&');
         $response = $this->get_data_from_uri($uri);
@@ -394,9 +394,9 @@ class Apihandler {
      *
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @param array $params An array of parameters to be sent with the API request.
-     * @return array|false An array of results if successful, false otherwise.
+     * @return array An array of results.
      */
-    public function get_all_pages(string $endpoint = '', array $params = []) {
+    public function get_all_pages(string $endpoint = '', array $params = []): array {
         $results = [];
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $page = !empty($params[$this->schema['page_number']]) ? (int) $params[$this->schema['page_number']] : 1;
