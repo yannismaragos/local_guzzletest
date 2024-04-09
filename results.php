@@ -41,22 +41,67 @@ echo '======================================================== </br>';
 echo 'request_results </br>';
 echo '======================================================== </br>';
 
+// New apihandler object.
 $baseuri = new moodle_url('/local/guzzletest/api');
-$username = 'myusername';
-$password = 'mypassword';
-$apihandler = new Apihandler($baseuri, $username, $password);
+$apihandler = new Apihandler($baseuri->out());
 
-$params = [
-    'page' => optional_param('page', 1, PARAM_INT),
-    'limit' => optional_param('limit', 100, PARAM_INT),
+// Set authentication headers.
+$apihandler->set_authentication_headers([
+    'accept' => 'application/json, text/plain, */*',
+    'accept-language' => 'en',
+    'connection' => 'keep-alive',
+    'content-type' => 'application/json',
+    'dnt' => '1',
+    'origin' => $baseuri->out(),
+    'referer' => $baseuri->out() . '/login/',
+    'sec-fetch-dest' => 'empty',
+    'sec-fetch-mode' => 'cors',
+    'sec-fetch-site' => 'same-origin',
+    'sec-gpc' => '1',
+    'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+    'x-access-level' => '74',
+    'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
+    'sec-ch-ua-mobile' => '?0',
+    'sec-ch-ua-platform' => 'Linux',
+]);
+
+// Authenticate.
+$credentials = [
+    'username' => 'myusername',
+    'password' => 'mypassword',
+    'endpoint' => 'token.php',
 ];
+$apihandler->authenticate($credentials);
 
+// Set response schema.
 $apihandler->set_response_schema([
     'page_number' => 'page',
     'page_limit' => 'limit',
     'total_records' => 'total',
     'records' => 'records',
 ]);
+
+// Set request headers.
+$apihandler->set_request_headers([
+    'accept' => '*/*',
+    'accept-language' => 'en',
+    'connection' => 'keep-alive',
+    'dnt' => '1',
+    'sec-fetch-dest' => 'empty',
+    'sec-fetch-mode' => 'cors',
+    'sec-fetch-site' => 'same-origin',
+    'sec-gpc' => '1',
+    'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+    'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
+    'sec-ch-ua-mobile' => '?0',
+    'sec-ch-ua-platform' => 'Linux',
+]);
+
+// Get all pages.
+$params = [
+    'page' => optional_param('page', 1, PARAM_INT),
+    'limit' => optional_param('limit', 100, PARAM_INT),
+];
 
 $result = $apihandler->get_all_pages('json.php', $params);
 

@@ -86,11 +86,11 @@ class Apihandler {
     private $password;
 
     /**
-     * The headers for the API token.
+     * The headers for the API authentication.
      *
      * @var array
      */
-    private $tokenheaders;
+    private $authheaders;
 
     /**
      * The headers for the API request.
@@ -110,27 +110,23 @@ class Apihandler {
      * Constructs a new instance of the Apihandler class.
      *
      * @param string $baseuri The base URI for the API.
-     * @param string $username (optional) The username for authentication.
-     * @param string $password (optional) The password for authentication.
      */
-    public function __construct(string $baseuri, string $username = null, string $password = null) {
+    public function __construct(string $baseuri) {
         $this->baseuri = rtrim($baseuri, '/');
-        $this->username = $username;
-        $this->password = $password;
-        $this->tokenheaders = $this->get_default_token_headers();
+        $this->authheaders = $this->get_default_auth_headers();
         $this->requestheaders = $this->get_default_request_headers();
         $this->schema = $this->get_default_response_schema();
     }
 
     /**
-     * Retrieves the default token headers.
+     * Retrieves the default authentication headers.
      *
-     * @return array The default token headers.
+     * @return array The default authentication headers.
      */
-    private function get_default_token_headers(): array {
+    private function get_default_auth_headers(): array {
         return [
             'accept' => 'application/json, text/plain, */*',
-            'accept-language' => 'en;q=0.9',
+            'accept-language' => 'en',
             'connection' => 'keep-alive',
             'content-type' => 'application/json',
             'dnt' => '1',
@@ -155,6 +151,7 @@ class Apihandler {
      */
     private function get_default_request_headers(): array {
         return [
+            'accept' => '*/*',
             'accept-language' => 'en',
             'connection' => 'keep-alive',
             'dnt' => '1',
@@ -163,7 +160,6 @@ class Apihandler {
             'sec-fetch-site' => 'same-origin',
             'sec-gpc' => '1',
             'user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-            'accept' => '*/*',
             'sec-ch-ua' => 'Brave;v="117", Not;A=Brand;v="8", Chromium;v="117"',
             'sec-ch-ua-mobile' => '?0',
             'sec-ch-ua-platform' => 'Linux',
@@ -206,6 +202,49 @@ class Apihandler {
     }
 
     /**
+     * Authenticates the user using the provided credentials,  and sets the
+     * bearer token in the request headers.
+     *
+     * @param array $credentials The user's credentials.
+     * @return void
+     */
+    public function authenticate(array $credentials): void {
+        $this->username = $credentials['username'];
+        $this->password = $credentials['password'];
+        $token = $this->get_bearer_token($credentials['endpoint']);
+        $this->requestheaders['authorization'] = "Bearer $token";
+    }
+
+    /**
+     * Sets the authentication headers for the API request.
+     *
+     * @param array $headers The authentication headers to be set.
+     * @return void
+     */
+    public function set_authentication_headers(array $headers): void {
+        if (!empty($headers)) {
+            $this->authheaders = $headers;
+        }
+    }
+
+    /**
+     * Sets the request headers for the API request.
+     *
+     * @param array $headers The request headers to be set.
+     * @return void
+     */
+    public function set_request_headers(array $headers): void {
+        if (!empty($headers)) {
+            $authorization = $this->requestheaders['authorization'] ?? null;
+            $this->requestheaders = $headers;
+
+            if ($authorization !== null) {
+                $this->requestheaders['authorization'] = $authorization;
+            }
+        }
+    }
+
+    /**
      * Get a bearer token from an API by sending an authentication request.
      *
      * This function sends an HTTP POST request to the specified URI to
@@ -214,16 +253,12 @@ class Apihandler {
      * response with a token field.
      *
      * @param string $endpoint The endpoint to be appended to the base URI.
-     * @param array $headers (Optional) Additional headers to include in the request.
-     * @return string|false The bearer token if authentication is successful,
-     *                      or false on failure.
+     * @return string The bearer token if authentication is successful.
      * @throws Exception If the API request was not successful or the token is not found.
      * @throws RequestException If there was an error in the API request.
      */
-    public function get_bearer_token(string $endpoint = '', array $headers = []) {
-        $method = 'POST';
+    private function get_bearer_token(string $endpoint = ''): string {
         $uri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
-        $this->tokenheaders = empty($headers) ? $this->tokenheaders : $headers;
 
         // Define the JSON payload.
         $body = json_encode([
@@ -236,8 +271,8 @@ class Apihandler {
         $client = $this->httpclient ?? new Client();
 
         try {
-            $response = $client->request($method, $uri, [
-                'headers' => $this->tokenheaders,
+            $response = $client->request('POST', $uri, [
+                'headers' => $this->authheaders,
                 'body' => $body,
                 'timeout' => 20,
             ]);
@@ -313,16 +348,10 @@ class Apihandler {
      *
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @param array $params An array of parameters to be included in the API request.
-     * @param array $headers (Optional) Additional headers to include in the request.
      * @return array The processed results from the API response.
      * @throws Exception If there is an error in the API response.
      */
-    public function get_page(string $endpoint = '', array $params = [], array $headers = []) {
-        // Get token and set headers.
-        $this->requestheaders = empty($headers) ? $this->requestheaders : $headers;
-        $token = $this->get_bearer_token('token.php');
-        $this->requestheaders['authorization'] = "Bearer $token";
-
+    public function get_page(string $endpoint = '', array $params = []) {
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $uri = $baseuri . '?' . http_build_query($params, '', '&');
         $response = $this->get_data_from_uri($uri);
@@ -347,16 +376,10 @@ class Apihandler {
      *
      * @param string $endpoint The endpoint to be appended to the base URI.
      * @param array $params An array of parameters to be sent with the API request.
-     * @param array $headers (Optional) Additional headers to include in the request.
      * @return array|false An array of results if successful, false otherwise.
      * @throws Exception If an error occurs during the API request.
      */
-    public function get_all_pages(string $endpoint = '', array $params = [], array $headers = []) {
-        // Get token and set headers.
-        $this->requestheaders = empty($headers) ? $this->requestheaders : $headers;
-        $token = $this->get_bearer_token('token.php');
-        $this->requestheaders['authorization'] = "Bearer $token";
-
+    public function get_all_pages(string $endpoint = '', array $params = []) {
         $results = [];
         $baseuri = !empty($endpoint) ? $this->baseuri . '/' . trim($endpoint, '/') : $this->baseuri;
         $page = !empty($params[$this->schema['page_number']]) ? (int) $params[$this->schema['page_number']] : 1;
