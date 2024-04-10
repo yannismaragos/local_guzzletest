@@ -27,7 +27,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_guzzletest\api;
+namespace local_guzzletest\httputils;
 
 use GuzzleHttp\Client;
 use Exception;

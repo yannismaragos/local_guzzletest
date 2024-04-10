@@ -26,10 +26,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_guzzletest\api;
+namespace local_guzzletest\httputils;
 
-use local_guzzletest\api\Config;
-use local_guzzletest\api\Tokengenerator;
+use local_guzzletest\httputils\Config;
+use local_guzzletest\httputils\Tokengenerator;
 use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
 use Exception;

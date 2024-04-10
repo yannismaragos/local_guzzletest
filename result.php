@@ -25,10 +25,10 @@
 // phpcs:ignore
 require_once('../../config.php');
 
-use local_guzzletest\api\Handler;
 use GuzzleHttp\Client;
-use local_guzzletest\api\Tokengenerator;
-use local_guzzletest\api\Config;
+use local_guzzletest\httputils\Handler;
+use local_guzzletest\httputils\Tokengenerator;
+use local_guzzletest\httputils\Config;
 
 // Setup the page.
 $context = \core\context\system::instance();
@@ -45,11 +45,11 @@ echo '======================================================== </br>';
 echo 'request_result </br>';
 echo '======================================================== </br>';
 
-// New apihandler object.
+// New handler object.
 $baseuri = new moodle_url('/local/guzzletest/api');
 $client = new Client();
 $config = Config::get_instance($baseuri->out(), $client);
-$apihandler = new Handler($config);
+$handler = new Handler($config);
 
 // Authenticate (optional).
 $credentials = [
@@ -79,10 +79,10 @@ $tokengenerator->set_authentication_headers([
     'sec-ch-ua-platform' => 'Linux',
 ]);
 
-$apihandler->authenticate($credentials, $tokengenerator);
+$handler->authenticate($credentials, $tokengenerator);
 
 // Set response schema.
-$apihandler->set_response_schema([
+$handler->set_response_schema([
     'page_number' => 'page',
     'page_limit' => 'limit',
     'total_records' => 'total',
@@ -90,7 +90,7 @@ $apihandler->set_response_schema([
 ]);
 
 // Set request headers.
-$apihandler->set_request_headers([
+$handler->set_request_headers([
     'accept' => '*/*',
     'accept-language' => 'en',
     'connection' => 'keep-alive',
@@ -110,7 +110,7 @@ $params = [
     'page' => optional_param('page', 1, PARAM_INT),
     'limit' => optional_param('limit', 100, PARAM_INT),
 ];
-$result = $apihandler->get_page('json.php', $params, []);
+$result = $handler->get_page('json.php', $params, []);
 
 // phpcs:ignore
 print_object($result);
