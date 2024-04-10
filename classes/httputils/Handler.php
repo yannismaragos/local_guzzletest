@@ -140,20 +140,13 @@ class Handler {
      * @param array $credentials The user's credentials.
      * @param Tokengenerator $tokengenerator The token generator object.
      * @return void
-     * @throws InvalidArgumentException If credentials or tokengenerator are missing.
+     * @throws InvalidArgumentException If credentials are missing.
      */
     public function authenticate(array $credentials, Tokengenerator $tokengenerator): void {
         if (!isset($credentials['username'], $credentials['password'])) {
             throw new InvalidArgumentException(
                 'Missing credentials in authenticate method.',
                 $this->config->get_setting('EXCEPTION_CODE_CREDENTIALS')
-            );
-        }
-
-        if (!isset($tokengenerator)) {
-            throw new InvalidArgumentException(
-                'Missing tokengenerator.',
-                $this->config->get_setting('EXCEPTION_CODE_TOKENGENERATOR')
             );
         }
 
