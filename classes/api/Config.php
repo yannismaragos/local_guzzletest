@@ -84,20 +84,20 @@ class Config {
 
         $this->settings = [
             // Connection related exceptions.
-            'EXCEPTION_CONNECTION' => 3001,
+            'EXCEPTION_CODE_CONNECTION' => 3001,
             // API related exceptions.
-            'EXCEPTION_API_REQUEST' => 4001,
-            'EXCEPTION_BEARER_TOKEN' => 4002,
-            'EXCEPTION_JSON_DECODE' => 4003,
-            'EXCEPTION_CLIENT_NULL' => 4004,
+            'EXCEPTION_CODE_API' => 4001,
+            'EXCEPTION_CODE_BEARER' => 4002,
+            'EXCEPTION_CODE_JSON' => 4003,
+            'EXCEPTION_CODE_CLIENT' => 4004,
             // Argument related exceptions.
-            'EXCEPTION_INVALID_URI' => 5001,
-            'EXCEPTION_MISSING_CREDENTIALS' => 5002,
-            'EXCEPTION_MISSING_TOKENGENERATOR' => 5003,
+            'EXCEPTION_CODE_URI' => 5001,
+            'EXCEPTION_CODE_CREDENTIALS' => 5002,
+            'EXCEPTION_CODE_TOKENGENERATOR' => 5003,
             // Settings related exceptions.
-            'EXCEPTION_SETTING' => 6001,
+            'EXCEPTION_CODE_SETTING' => 6001,
             // Other settings.
-            'TIMEOUT' => 20,
+            'SETTING_TIMEOUT' => 20,
         ];
     }
 
@@ -128,7 +128,7 @@ class Config {
             return $this->settings[$key];
         }
 
-        throw new Exception("Setting $key not found", $this->settings['EXCEPTION_SETTING']);
+        throw new Exception("Setting $key not found", $this->settings['EXCEPTION_CODE_SETTING']);
     }
 
     /**

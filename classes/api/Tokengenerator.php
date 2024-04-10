@@ -127,7 +127,7 @@ class Tokengenerator {
         if (empty($username) || empty($password)) {
             throw new InvalidArgumentException(
                 'Missing credentials in get_bearer_token method.',
-                $this->config->get_setting('EXCEPTION_MISSING_CREDENTIALS')
+                $this->config->get_setting('EXCEPTION_CODE_CREDENTIALS')
             );
         }
 
@@ -145,7 +145,7 @@ class Tokengenerator {
         $client = $this->config->get_http_client();
 
         if ($client === null) {
-            throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CLIENT_NULL'));
+            throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CODE_CLIENT'));
         }
 
         // Make up to 3 attempts to connect to the API.
@@ -155,7 +155,7 @@ class Tokengenerator {
                 $response = $client->request('POST', $uri, [
                     'headers' => $this->authheaders,
                     'body' => $body,
-                    'timeout' => $this->config->get_setting('TIMEOUT'),
+                    'timeout' => $this->config->get_setting('SETTING_TIMEOUT'),
                 ]);
                 break;
             } catch (RequestException $e) {
@@ -163,7 +163,7 @@ class Tokengenerator {
                 if ($attempts >= 3) {
                     throw new Exception(
                         'Failed to connect to API after 3 attempts.',
-                        $this->config->get_setting('EXCEPTION_CONNECTION')
+                        $this->config->get_setting('EXCEPTION_CODE_CONNECTION')
                     );
                 }
             }
@@ -175,7 +175,7 @@ class Tokengenerator {
         if ($statuscode !== 200) {
             throw new Exception(
                 'API request failed with status code: ' . $statuscode,
-                $this->config->get_setting('EXCEPTION_API_REQUEST')
+                $this->config->get_setting('EXCEPTION_CODE_API')
             );
         }
 
@@ -185,7 +185,7 @@ class Tokengenerator {
         if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
             throw new JsonException(
                 'Failed to decode JSON from API response.',
-                $this->config->get_setting('EXCEPTION_JSON_DECODE')
+                $this->config->get_setting('EXCEPTION_CODE_JSON')
             );
         }
 
@@ -193,7 +193,7 @@ class Tokengenerator {
         if (empty($responsedata['token'])) {
             throw new Exception(
                 'Bearer token not found in API response.',
-                $this->config->get_setting('EXCEPTION_BEARER_TOKEN')
+                $this->config->get_setting('EXCEPTION_CODE_BEARER')
             );
         }
 

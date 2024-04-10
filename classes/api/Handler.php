@@ -146,14 +146,14 @@ class Handler {
         if (!isset($credentials['username'], $credentials['password'])) {
             throw new InvalidArgumentException(
                 'Missing credentials in authenticate method.',
-                $this->config->get_setting('EXCEPTION_MISSING_CREDENTIALS')
+                $this->config->get_setting('EXCEPTION_CODE_CREDENTIALS')
             );
         }
 
         if (!isset($tokengenerator)) {
             throw new InvalidArgumentException(
                 'Missing tokengenerator.',
-                $this->config->get_setting('EXCEPTION_MISSING_TOKENGENERATOR')
+                $this->config->get_setting('EXCEPTION_CODE_TOKENGENERATOR')
             );
         }
 
@@ -201,13 +201,13 @@ class Handler {
     private function get_data_from_uri(string $uri): array {
         // Validate uri.
         if (empty($uri) || !filter_var($uri, FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException('Invalid URI.', $this->config->get_setting('EXCEPTION_INVALID_URI'));
+            throw new InvalidArgumentException('Invalid URI.', $this->config->get_setting('EXCEPTION_CODE_URI'));
         }
 
         $client = $this->config->get_http_client();
 
         if ($client === null) {
-            throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CLIENT_NULL'));
+            throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CODE_CLIENT'));
         }
 
         // Make up to 3 attempts to connect to the API.
@@ -217,7 +217,7 @@ class Handler {
             try {
                 $response = $client->request('GET', $uri, [
                     'headers' => $this->requestheaders,
-                    'timeout' => $this->config->get_setting('TIMEOUT'),
+                    'timeout' => $this->config->get_setting('SETTING_TIMEOUT'),
                 ]);
                 break;
             } catch (RequestException $e) {
@@ -225,7 +225,7 @@ class Handler {
                 if ($attempts >= 3) {
                     throw new Exception(
                         'Failed to connect to API after 3 attempts.',
-                        $this->config->get_setting('EXCEPTION_CONNECTION')
+                        $this->config->get_setting('EXCEPTION_CODE_CONNECTION')
                     );
                 }
             }
@@ -237,7 +237,7 @@ class Handler {
         if ($statuscode !== 200) {
             throw new Exception(
                 'API request failed with status code: ' . $statuscode,
-                $this->config->get_setting('EXCEPTION_API_REQUEST')
+                $this->config->get_setting('EXCEPTION_CODE_API')
             );
         }
 
@@ -247,7 +247,7 @@ class Handler {
         if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
             throw new JsonException(
                 'Failed to decode JSON from API response: ' . json_last_error_msg(),
-                $this->config->get_setting('EXCEPTION_JSON_DECODE')
+                $this->config->get_setting('EXCEPTION_CODE_JSON')
             );
         }
 
