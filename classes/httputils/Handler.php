@@ -83,7 +83,7 @@ class Handler {
      *
      * @return array The default request headers.
      */
-    public function get_default_request_headers(): array {
+    private function get_default_request_headers(): array {
         return [
             'accept' => '*/*',
             'accept-language' => 'en',
@@ -105,7 +105,7 @@ class Handler {
      *
      * @return array The default schema.
      */
-    public function get_default_response_schema(): array {
+    private function get_default_response_schema(): array {
         return [
             'page_number' => 'page',
             'page_limit' => 'limit',
@@ -200,12 +200,12 @@ class Handler {
         $client = $this->config->get_http_client();
 
         if ($client === null) {
-            throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CODE_CLIENT'));
+            throw new Exception('HTTP client is null.', $this->config->get_setting('EXCEPTION_CODE_CLIENT'));
         }
 
         // Retry attempt to connect to the API.
         $attempts = 0;
-        $retrylimit = $this->config->get_setting('SETTING_RETRY_LIMIT') ?? 3;
+        $retrylimit = $this->config->get_setting('SETTING_RETRY_LIMIT');
 
         while ($attempts < $retrylimit) {
             try {
@@ -218,7 +218,7 @@ class Handler {
                 $attempts++;
                 if ($attempts >= $retrylimit) {
                     throw new Exception(
-                        'Failed to connect to API after ' . $retrylimit . ' attempts.',
+                        'Failed to connect to API.',
                         $this->config->get_setting('EXCEPTION_CODE_CONNECTION')
                     );
                 }

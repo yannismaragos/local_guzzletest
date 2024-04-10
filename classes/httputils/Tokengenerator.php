@@ -150,7 +150,7 @@ class Tokengenerator {
 
         // Retry attempt to connect to the API.
         $attempts = 0;
-        $retrylimit = $this->config->get_setting('SETTING_RETRY_LIMIT') ?? 3;
+        $retrylimit = $this->config->get_setting('SETTING_RETRY_LIMIT');
 
         while ($attempts < $retrylimit) {
             try {
@@ -164,7 +164,7 @@ class Tokengenerator {
                 $attempts++;
                 if ($attempts >= $retrylimit) {
                     throw new Exception(
-                        'Failed to connect to API after ' . $retrylimit . ' attempts.',
+                        'Failed to connect to API.',
                         $this->config->get_setting('EXCEPTION_CODE_CONNECTION')
                     );
                 }
