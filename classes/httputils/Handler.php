@@ -210,10 +210,11 @@ class Handler {
             throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CODE_CLIENT'));
         }
 
-        // Make up to 3 attempts to connect to the API.
+        // Retry attempt to connect to the API.
         $attempts = 0;
+        $retrylimit = $this->config->get_setting('SETTING_RETRY_LIMIT') ?? 3;
 
-        while ($attempts < 3) {
+        while ($attempts < $retrylimit) {
             try {
                 $response = $client->request('GET', $uri, [
                     'headers' => $this->requestheaders,
@@ -222,9 +223,9 @@ class Handler {
                 break;
             } catch (RequestException $e) {
                 $attempts++;
-                if ($attempts >= 3) {
+                if ($attempts >= $retrylimit) {
                     throw new Exception(
-                        'Failed to connect to API after 3 attempts.',
+                        'Failed to connect to API after ' . $retrylimit . ' attempts.',
                         $this->config->get_setting('EXCEPTION_CODE_CONNECTION')
                     );
                 }

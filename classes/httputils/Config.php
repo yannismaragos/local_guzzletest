@@ -98,6 +98,7 @@ class Config {
             'EXCEPTION_CODE_SETTING' => 6001,
             // Other settings.
             'SETTING_TIMEOUT' => 20,
+            'SETTING_RETRY_LIMIT' => 3,
         ];
     }
 
