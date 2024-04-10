@@ -191,7 +191,7 @@ class Handler {
      * @throws Exception If the API request is unsuccessful.
      * @throws JsonException If JSON decoding is unsuccessful.
      */
-    private function get_data_from_uri(string $uri): array {
+    protected function get_data_from_uri(string $uri): array {
         // Validate uri.
         if (empty($uri) || !filter_var($uri, FILTER_VALIDATE_URL)) {
             throw new InvalidArgumentException('Invalid URI.', $this->config->get_setting('EXCEPTION_CODE_URI'));
@@ -308,7 +308,7 @@ class Handler {
             }
 
             $page++;
-        } while (!empty($fetchedresults) && $page <= $totalpages && !PHPUNIT_TEST);
+        } while (!empty($fetchedresults) && $page <= $totalpages);
 
         return $results;
     }
