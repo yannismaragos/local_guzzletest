@@ -74,7 +74,7 @@ class Tokengenerator {
      *
      * @return array The default authentication headers.
      */
-    public function get_default_auth_headers(): array {
+    private function get_default_auth_headers(): array {
         return [
             'accept' => 'application/json, text/plain, */*',
             'accept-language' => 'en',
@@ -145,7 +145,7 @@ class Tokengenerator {
         $client = $this->config->get_http_client();
 
         if ($client === null) {
-            throw new Exception('HTTP client is null', $this->config->get_setting('EXCEPTION_CODE_CLIENT'));
+            throw new Exception('HTTP client is null.', $this->config->get_setting('EXCEPTION_CODE_CLIENT'));
         }
 
         // Retry attempt to connect to the API.

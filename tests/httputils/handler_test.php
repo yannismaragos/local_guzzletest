@@ -413,7 +413,7 @@ class handler_test extends \advanced_testcase {
      */
     public function test_get_data_from_uri_json_decode_failed(): void {
         $this->expectException(JsonException::class);
-        $this->expectExceptionMessage('Failed to decode JSON from API response: Syntax error');
+        $this->expectExceptionMessage('Failed to decode JSON from API response.');
 
         // Mock the response to return invalid json.
         $responsemock = $this->createMock(Response::class);

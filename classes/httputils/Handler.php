@@ -240,7 +240,7 @@ class Handler {
         // Check if JSON decoding was successful and there were no errors.
         if ($responsedata === null || json_last_error() !== JSON_ERROR_NONE) {
             throw new JsonException(
-                'Failed to decode JSON from API response: ' . json_last_error_msg(),
+                'Failed to decode JSON from API response.',
                 $this->config->get_setting('EXCEPTION_CODE_JSON')
             );
         }
