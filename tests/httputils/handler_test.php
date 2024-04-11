@@ -568,67 +568,17 @@ class handler_test extends \advanced_testcase {
     /**
      * Tests the 'get_all_pages' method of the Handler class.
      *
+     * @param array $expectedrecords The records we expect 'get_page' to return.
      * @return void
      * @covers \local_guzzletest\httputils\Handler::get_all_pages
+     * @dataProvider get_all_pages_provider
      */
-    public function test_get_all_pages(): void {
-        // First page of records.
-        $page1 = [
-            [
-                'state-province' => 'Aegean Sea',
-                'country' => 'Greece',
-                'domains' => ['aegean.gr'],
-                'web_pages' => ['https://www.aegean.gr/'],
-                'alpha_two_code' => 'GR',
-                'name' => 'Aegean University',
-            ],
-            [
-                'state-province' => 'Attica',
-                'country' => 'Greece',
-                'domains' => ['ntua.gr'],
-                'web_pages' => ['https://www.ntua.gr/'],
-                'alpha_two_code' => 'GR',
-                'name' => 'National Technical University of Athens',
-            ],
-            [
-                'state-province' => null,
-                'country' => 'Greece',
-                'domains' => ['eap.gr'],
-                'web_pages' => ['https://www.eap.gr/'],
-                'alpha_two_code' => 'GR',
-                'name' => 'Hellenic Open University',
-            ],
-        ];
+    public function test_get_all_pages($expectedrecords): void {
+        // Get first page of records.
+        $page1 = array_slice($expectedrecords, 0, 3);
 
-        // Second page of records.
-        $page2 = [
-            [
-                'state-province' => 'Crete',
-                'country' => 'Greece',
-                'domains' => ['uoc.gr'],
-                'web_pages' => ['https://www.uoc.gr/'],
-                'alpha_two_code' => 'GR',
-                'name' => 'University of Crete',
-            ],
-            [
-                'state-province' => 'Thessaly',
-                'country' => 'Greece',
-                'domains' => ['uth.gr'],
-                'web_pages' => ['https://www.uth.gr/'],
-                'alpha_two_code' => 'GR',
-                'name' => 'University of Thessaly',
-            ],
-            [
-                'state-province' => 'Ionian Islands',
-                'country' => 'Greece',
-                'domains' => ['ionio.gr'],
-                'web_pages' => ['https://www.ionio.gr/'],
-                'alpha_two_code' => 'GR',
-                'name' => 'Ionian University',
-            ],
-        ];
-
-        $expectedrecordstotal = array_merge($page1, $page2);
+        // Get second page of records.
+        $page2 = array_slice($expectedrecords, 3, 3);
 
         // Create a partial mock for the Handler class.
         $handlermock = $this->getMockBuilder(Handler::class)
@@ -663,7 +613,70 @@ class handler_test extends \advanced_testcase {
 
         $result = $handlermock->get_all_pages('', ['limit' => 3]);
 
-        $this->assertEquals($expectedrecordstotal, $result);
+        $this->assertEquals($expectedrecords, $result);
+    }
+
+    /**
+     * Data provider for
+     * {@see test_get_all_pages}
+     *
+     * @return array
+     */
+    public static function get_all_pages_provider(): array {
+        return [
+            [
+                [
+                    [
+                        'state-province' => 'Aegean Sea',
+                        'country' => 'Greece',
+                        'domains' => ['aegean.gr'],
+                        'web_pages' => ['https://www.aegean.gr/'],
+                        'alpha_two_code' => 'GR',
+                        'name' => 'Aegean University',
+                    ],
+                    [
+                        'state-province' => 'Attica',
+                        'country' => 'Greece',
+                        'domains' => ['ntua.gr'],
+                        'web_pages' => ['https://www.ntua.gr/'],
+                        'alpha_two_code' => 'GR',
+                        'name' => 'National Technical University of Athens',
+                    ],
+                    [
+                        'state-province' => null,
+                        'country' => 'Greece',
+                        'domains' => ['eap.gr'],
+                        'web_pages' => ['https://www.eap.gr/'],
+                        'alpha_two_code' => 'GR',
+                        'name' => 'Hellenic Open University',
+                    ],
+                    [
+                        'state-province' => 'Crete',
+                        'country' => 'Greece',
+                        'domains' => ['uoc.gr'],
+                        'web_pages' => ['https://www.uoc.gr/'],
+                        'alpha_two_code' => 'GR',
+                        'name' => 'University of Crete',
+                    ],
+                    [
+                        'state-province' => 'Thessaly',
+                        'country' => 'Greece',
+                        'domains' => ['uth.gr'],
+                        'web_pages' => ['https://www.uth.gr/'],
+                        'alpha_two_code' => 'GR',
+                        'name' => 'University of Thessaly',
+                    ],
+                    [
+                        'state-province' => 'Ionian Islands',
+                        'country' => 'Greece',
+                        'domains' => ['ionio.gr'],
+                        'web_pages' => ['https://www.ionio.gr/'],
+                        'alpha_two_code' => 'GR',
+                        'name' => 'Ionian University',
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**
